@@ -3,14 +3,14 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const { Sequelize, DataTypes } = require('sequelize');
+const { Sequelize, DataTypes, Op } = require('sequelize');
 const { google } = require('googleapis');
 const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Render thường dùng biến DATABASE_URL cho Postgres, nếu bạn đặt tên khác thì sửa lại ở đây
+// Render thường dùng biến DATABASE_URL cho Postgres
 const POSTGRES_URI = process.env.POSTGRES_URI || process.env.DATABASE_URL;
 const DRIVE_FOLDER_ID = process.env.DRIVE_FOLDER_ID;
 const CLIENT_ID = process.env.DRIVE_CLIENT_ID;
@@ -40,7 +40,7 @@ const sequelize = new Sequelize(POSTGRES_URI, {
     dialectOptions: {
         ssl: {
             require: true,
-            rejectUnauthorized: false // Bắt buộc cho Render/Heroku
+            rejectUnauthorized: false 
         }
     }
 });
@@ -65,6 +65,11 @@ const DeptDataModel = sequelize.define('DeptData', {
     daoTaoNganHan: { type: DataTypes.JSONB, defaultValue: [] },
     danhMucPhacDo: { type: DataTypes.JSONB, defaultValue: [] }
 });
+
+// 🟢 KHỞI TẠO BIẾN UPLOAD (MULTER) - ĐÃ BỔ SUNG
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) { fs.mkdirSync(uploadDir, { recursive: true }); }
+const upload = multer({ dest: 'uploads/', limits: { fieldSize: 100 * 1024 * 1024 }});
 
 async function khoiTaoDuLieuGoc() {
     try {
@@ -93,7 +98,7 @@ async function khoiTaoDuLieuGoc() {
     }
 }
 
-// KHỞI ĐỘNG KẾT NỐI
+// KẾT NỐI DB
 sequelize.authenticate()
     .then(() => { 
         console.log("✅ Đã kết nối PostgreSQL (SSL Mode)"); 
@@ -101,6 +106,7 @@ sequelize.authenticate()
     })
     .catch(err => console.error("❌ Lỗi kết nối Postgres:", err.message));
 
+// DRIVE SERVICE
 let driveService;
 try {
     const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, "https://developers.google.com/oauthplayground");
@@ -111,29 +117,18 @@ try {
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(path.join(__dirname)));
 
-// 🟢 API ĐĂNG NHẬP (ĐÃ THÊM LOG LỖI CHI TIẾT)
+// 🟢 API ĐĂNG NHẬP
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        console.log(`🔑 Thử đăng nhập: ${username}`);
-
         const user = await UserModel.findOne({ where: { username, password } });
-        
-        if (!user) {
-            console.log("❌ Sai tài khoản hoặc mật khẩu");
-            return res.status(401).json({ message: "Sai tên đăng nhập hoặc mật khẩu!" });
-        }
-
+        if (!user) return res.status(401).json({ message: "Sai tên đăng nhập hoặc mật khẩu!" });
         const token = jwt.sign({ id: user.id, role: user.role, tenKhoa: user.tenKhoa, username: user.username }, JWT_SECRET, { expiresIn: '8h' });
-        console.log("✅ Đăng nhập thành công!");
         res.json({ message: "Đăng nhập thành công", token, role: user.role, tenKhoa: user.tenKhoa, username: user.username });
-    } catch (error) { 
-        console.error("🔥 LỖI SERVER LOGIN:", error.message);
-        res.status(500).json({ message: "Lỗi kết nối cơ sở dữ liệu!", details: error.message }); 
-    }
+    } catch (error) { res.status(500).json({ message: "Lỗi kết nối cơ sở dữ liệu!" }); }
 });
 
-// Giữ lại các API khác từ code cũ của bạn...
+// 🟢 LẤY DỮ LIỆU CHÍNH
 app.get('/api/data', async (req, res) => {
     try { 
         const result = await DataModel.findOne({ where: { id_name: "hospital_main_db" }, raw: true }); 
@@ -144,22 +139,109 @@ app.get('/api/data', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Lỗi tải dữ liệu" }); }
 });
 
-app.get('/api/dept-data', async (req, res) => {
-    try { const allDepts = await DeptDataModel.findAll({ raw: true }); res.json(allDepts); } 
-    catch (error) { res.status(500).json({ message: "Lỗi tải dữ liệu" }); }
-});
-
+// 🟢 LƯU FILE EXCEL
 app.post('/api/upload-and-save', upload.single('fileExcel'), async (req, res) => {
     try {
         const tabName = req.body.tabName;
         const tabData = JSON.parse(req.body.tabData);
         let dbName = tabName === 'ICD10' ? "hospital_icd10_db" : "hospital_main_db";
+        
         let existingObj = await DataModel.findOne({ where: { id_name: dbName } });
         let newData = existingObj ? existingObj.currentData : {};
         newData[tabName] = tabData;
+
         await DataModel.upsert({ id_name: dbName, currentData: newData });
         res.json({ message: `Lưu dữ liệu cho bảng [${tabName}] thành công!` });
     } catch (error) { res.status(500).json({ message: "Lỗi hệ thống!" }); }
+});
+
+// 🟢 LẤY DỮ LIỆU KHOA
+app.get('/api/dept-data', async (req, res) => {
+    try { const allDepts = await DeptDataModel.findAll({ raw: true }); res.json(allDepts); } 
+    catch (error) { res.status(500).json({ message: "Lỗi tải dữ liệu" }); }
+});
+
+// Các hàm bổ trợ tìm kiếm
+function findItemIndex(danhMuc, targetMa, targetTen, type) {
+    let tMa = targetMa ? String(targetMa).trim().toLowerCase() : "";
+    let tTen = targetTen ? String(targetTen).trim().toLowerCase() : "";
+    return danhMuc.findIndex(item => {
+        let iMa = "", iMaLK = "", iTen = "";
+        if (type === 'PHAC_DO') {
+            iMa = item.maBenh ? String(item.maBenh).trim().toLowerCase() : "";
+            iMaLK = item.maBenhKhongDau ? String(item.maBenhKhongDau).trim().toLowerCase() : "";
+            iTen = item.tenBenh ? String(item.tenBenh).trim().toLowerCase() : (item.diseaseName ? String(item.diseaseName).trim().toLowerCase() : "");
+        } else {
+            iMa = item.ma ? String(item.ma).trim().toLowerCase() : "";
+            iMaLK = item.maLienKet ? String(item.maLienKet).trim().toLowerCase() : "";
+            iTen = item.ten ? String(item.ten).trim().toLowerCase() : "";
+        }
+        if (tMa !== "" && (iMa === tMa || iMaLK === tMa)) return true;
+        if (tTen !== "" && iTen === tTen) return true;
+        return false;
+    });
+}
+
+// API THÊM VÀO KHOA
+app.post('/api/dept-data/add', async (req, res) => {
+    try {
+        const { tenKhoa, quyTrinh, type } = req.body; 
+        const dept = await DeptDataModel.findOne({ where: { tenKhoa } });
+        let targetArray = type === 'PHAC_DO' ? [...dept.danhMucPhacDo] : [...dept.danhMucQTKT];
+        let maCheck = type === 'PHAC_DO' ? quyTrinh.maBenh : (quyTrinh.ma || quyTrinh.maLienKet);
+        let tenCheck = type === 'PHAC_DO' ? quyTrinh.tenBenh : quyTrinh.ten;
+
+        if (findItemIndex(targetArray, maCheck, tenCheck, type) !== -1) return res.status(400).json({ message: "Đã tồn tại!" });
+
+        quyTrinh.trangThai = "CHUA_NOP";
+        targetArray.push(quyTrinh); 
+        if (type === 'PHAC_DO') { dept.danhMucPhacDo = targetArray; dept.changed('danhMucPhacDo', true); }
+        else { dept.danhMucQTKT = targetArray; dept.changed('danhMucQTKT', true); }
+        await dept.save();
+        res.json({ message: "Thành công!" });
+    } catch (error) { res.status(500).json({ message: "Lỗi!" }); }
+});
+
+// API XÓA KHỎI KHOA
+app.post('/api/dept-data/remove', async (req, res) => {
+    try {
+        const { tenKhoa, maQuyTrinh, tenQuyTrinh, type } = req.body;
+        const dept = await DeptDataModel.findOne({ where: { tenKhoa } });
+        let targetArray = type === 'PHAC_DO' ? [...dept.danhMucPhacDo] : [...dept.danhMucQTKT];
+        const idx = findItemIndex(targetArray, maQuyTrinh, tenQuyTrinh, type);
+        if (idx !== -1) {
+            targetArray.splice(idx, 1);
+            if (type === 'PHAC_DO') { dept.danhMucPhacDo = targetArray; dept.changed('danhMucPhacDo', true); }
+            else { dept.danhMucQTKT = targetArray; dept.changed('danhMucQTKT', true); }
+            await dept.save();
+            res.json({ message: "Đã xóa!" });
+        } else res.status(404).json({ message: "Không thấy!" });
+    } catch (error) { res.status(500).json({ message: "Lỗi!" }); }
+});
+
+// NỘP FILE LÊN DRIVE
+app.post('/api/upload/khoa', upload.single('fileQuyTrinh'), async (req, res) => {
+    try {
+        const { tenKhoa, maQuyTrinh, tenQuyTrinh, type } = req.body;
+        if (!req.file) return res.status(400).json({ message: "Thiếu file!" });
+        const dept = await DeptDataModel.findOne({ where: { tenKhoa } });
+        let targetArray = type === 'PHAC_DO' ? [...dept.danhMucPhacDo] : [...dept.danhMucQTKT];
+        let idx = findItemIndex(targetArray, maQuyTrinh, tenQuyTrinh, type);
+        if (idx === -1) return res.status(404).json({ message: "Không tìm thấy trong giỏ hàng!" });
+
+        const fileMetadata = { name: `[NHÁP]_${tenKhoa}_${maQuyTrinh || tenQuyTrinh}`, parents: [DRIVE_FOLDER_ID] };
+        const media = { mimeType: req.file.mimetype, body: fs.createReadStream(req.file.path) };
+        const driveRes = await driveService.files.create({ resource: fileMetadata, media: media, fields: 'id, webViewLink' });
+        await driveService.permissions.create({ fileId: driveRes.data.id, requestBody: { role: 'reader', type: 'anyone' } });
+        fs.unlinkSync(req.file.path);
+
+        targetArray[idx].trangThai = 'CHO_DUYET'; 
+        targetArray[idx].fileKhoa = driveRes.data.webViewLink;
+        if (type === 'PHAC_DO') { dept.danhMucPhacDo = targetArray; dept.changed('danhMucPhacDo', true); }
+        else { dept.danhMucQTKT = targetArray; dept.changed('danhMucQTKT', true); }
+        await dept.save();
+        res.json({ message: "Nộp file thành công!" });
+    } catch (error) { res.status(500).json({ message: "Lỗi Drive!" }); }
 });
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
