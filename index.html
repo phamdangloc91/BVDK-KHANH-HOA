@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>QUẢN LÝ QUY TRÌNH KỸ THUẬT - BV ĐK KHÁNH HÒA</title>
+    <link rel="stylesheet" href="styles.css"> 
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
+    <script src="js/1_globals.js"></script>
+    <script src="js/2_auth.js"></script>
+    <script src="js/3_ui_render.js"></script>
+    <script src="js/4_file_handler.js"></script>
+    <script src="js/5_modal.js"></script>
+</head>
+<body>
+
+<div id="loading" class="loading-overlay">
+    <div style="font-size: 40px; margin-bottom: 15px;">⏳</div>
+    ĐANG XỬ LÝ DỮ LIỆU... VUI LÒNG ĐỢI
+</div>
+
+<input type="file" id="fileNopKhoa" style="display:none" accept=".doc,.docx" onchange="window.xuLyNopFileKhoa()">
+
+<nav class="navbar">
+    <div class="navbar-left">
+        <img src="logo.jpg" alt="Logo BVĐK Khánh Hòa" class="logo-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/803/803087.png'">
+        <div style="font-size: 19px; font-weight: bold; margin-right: 30px; letter-spacing: 0.5px;">BVĐK KHÁNH HÒA</div>
+        
+        <div class="dropdown">
+            <button class="dropbtn">QUY TRÌNH KỸ THUẬT ▼</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="window.switchTab('PL1', 'QTKT')">Phụ lục 1 (Đến 30/6/2026)</a>
+                <a href="#" onclick="window.switchTab('PL2', 'QTKT')">Phụ lục 2 (Từ 1/7/2026)</a>
+                <a href="#" onclick="window.switchTab('GiaDV', 'QTKT')" style="color:var(--danger); font-weight:bold;">💰 Giá Dịch vụ (TT 23)</a>
+                <a href="#" onclick="window.switchTab('MaDVBV', 'QTKT')" style="color:var(--info); font-weight:bold;">🏥 Mã Dịch vụ BV</a>
+            </div>
+        </div>
+
+        <div class="dropdown">
+            <button class="dropbtn" style="color: #4CAF50;">PHÁC ĐỒ ĐIỀU TRỊ ▼</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="window.switchTab('ICD10', 'PHAC_DO')">📚 Danh mục Mã ICD-10</a>
+            </div>
+        </div>
+        
+        <div class="dropdown">
+            <button class="dropbtn" style="color: #ffeb3b;">DANH SÁCH KHOA ▼</button>
+            <div class="dropdown-content dept-grid" id="menuCacKhoa"></div>
+        </div>
+
+        <div class="dropdown" id="menuKHTH" style="display: none;">
+            <button class="dropbtn" style="color: #ff9800;">P. KHTH ▼</button>
+            <div class="dropdown-content">
+                <a href="#" onclick="window.switchTab('KHTH_CHO_DUYET', 'QTKT')">⏳ Chờ duyệt HĐ KHKT</a>
+                <a href="#" onclick="window.switchTab('KHTH_NOP_BO', 'QTKT')">🏢 QTKT chờ nộp Bộ</a>
+                <a href="#" onclick="window.switchTab('KHTH_NOP_SO', 'QTKT')">🏥 QTKT chờ nộp Sở</a>
+                <a href="#" onclick="window.switchTab('KHTH_CHUA_AP_GIA', 'QTKT')" style="color:var(--danger); font-weight:bold;">⚠️ QTKT BV chưa áp giá</a>
+            </div>
+        </div>
+    </div>
+    <div id="navAuthArea" style="font-size: 14px;">
+        <button class="btn" style="background: white; color: var(--primary); padding: 8px 20px; font-size: 13px;" onclick="window.moModal('loginModal')">Đăng nhập</button>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="header-info">
+        <h2 id="tabTitle" style="margin:0; color: #333;">DANH MỤC PHỤ LỤC 1</h2>
+        <small id="tabDesc" style="font-size: 14px; color: #666;">Hệ thống tra cứu quy trình và phân loại kỹ thuật</small>
+    </div>
+
+    <div id="batchToolbar">
+        <div id="batchStatusText" style="color: #856404; font-size: 14px;">
+            <b>Công cụ Admin:</b> Tick chọn các kỹ thuật bên dưới để tải Quyết định & Biên bản hàng loạt.
+        </div>
+        <div>
+            <button id="btnStartBatch" class="btn" style="background: var(--purple); font-size:13px; padding: 8px 15px;" onclick="window.toggleMultiSelect(true)">📄 Tải / Cập nhật QĐ & BB họp HĐ KHKT</button>
+            <button id="btnConfirmBatch" class="btn" style="background: var(--success); font-size:13px; padding: 8px 15px; display:none;" onclick="window.moModalBatch()">✅ Xác nhận Chọn</button>
+            <button id="btnCancelBatch" class="btn" style="background: var(--danger); font-size:13px; padding: 8px 15px; display:none;" onclick="window.toggleMultiSelect(false)">❌ Hủy</button>
+        </div>
+    </div>
+
+    <div class="filter-section">
+        <div class="filter-group">
+            <label id="lblSearch">TÌM KIẾM CHUNG</label>
+            <input type="text" id="searchBox" placeholder="Nhập từ khóa tìm kiếm..." onkeyup="window.apDungLoc()">
+        </div>
+        <div class="filter-group" id="groupPhanLoai">
+            <label>PHÂN LOẠI</label>
+            <select id="filterLoai" onchange="window.apDungLoc()">
+                <option value="">-- Tất cả loại --</option>
+                <option value="LDB">Đặc biệt</option>
+                <option value="L1">Loại 1</option>
+                <option value="L2">Loại 2</option>
+                <option value="L3">Loại 3</option>
+                <option value="KPL">KPL</option>
+            </select>
+        </div>
+        
+        <div class="filter-group" id="groupQuyetDinh">
+            <label>QUYẾT ĐỊNH</label>
+            <div class="multi-select" id="multiSelectQD">
+                <div class="select-box" onclick="window.toggleQDDrodown(event)">
+                    <span id="selectedQDText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">-- Tất cả --</span>
+                    <span style="font-size: 10px; color: #555;">▼</span>
+                </div>
+                <div class="select-options" id="optionsQD"></div>
+            </div>
+        </div>
+
+        <div class="filter-group" id="groupColumnDisplay" style="display: none;">
+            <label style="color:#0056b3;">CHỌN CỘT HIỂN THỊ</label>
+            <div class="multi-select" id="multiSelectCol">
+                <div class="select-box" onclick="window.toggleColDropdown(event)" style="border-color:#80bdff; background:#f8f9fa;">
+                    <span id="selectedColText" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; color:#0056b3; font-weight:bold;">Tùy chỉnh cột</span>
+                    <span style="font-size: 10px; color: #0056b3;">▼</span>
+                </div>
+                <div class="select-options" id="optionsCol"></div>
+            </div>
+        </div>
+
+        <div class="filter-group" id="groupChuaCoMa" style="display: none;">
+            <label style="color:var(--danger);">LỌC NHANH</label>
+            <div style="margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" id="chkChuaCoMa" onchange="window.apDungLoc()" style="cursor:pointer; width:16px; height:16px; margin:0;">
+                <span style="font-size:13px; font-weight:bold; color:#333; cursor:pointer;" onclick="document.getElementById('chkChuaCoMa').click()">Chưa có mã LK</span>
+            </div>
+        </div>
+        
+        <div class="filter-group" id="groupNamDT" style="display: none;">
+            <label style="color:var(--danger);">* NĂM ĐÀO TẠO</label>
+            <select id="filterNamDT" onchange="window.apDungLoc()" style="border: 2px solid var(--danger);">
+                <option value="">-- Chọn Năm Upload/Xem --</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+            </select>
+        </div>
+        
+        <div class="action-bar" id="userActionBar" style="display:none;">
+            <button id="btnSaveDTNH" class="btn" style="background:var(--warning); color:black; font-size: 14px; padding: 10px 15px; display:none;" onclick="window.saveDTNH()">💾 Lưu Bảng</button>
+            <button class="btn" style="background:var(--success); font-size: 14px; padding: 10px 15px;" onclick="window.exportToExcel()">📥 Xuất Excel</button>
+            <button id="btnNhapExcel" class="btn" style="background:#17a2b8; font-size: 14px; padding: 10px 15px;" onclick="document.getElementById('fileExcel').click()">📤 Nhập File Excel</button>
+            <input type="file" id="fileExcel" style="display:none" onchange="window.importFromExcel()" accept=".xlsx, .xls, .csv">
+        </div>
+    </div>
+
+    <div id="colorLegend" style="display: none; padding: 12px 15px; background: white; border-radius: 8px; margin-bottom: 20px; border: 1px solid #eaeaea; font-size: 13px; align-items: center; gap: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+        <strong style="color:#555;">Bộ lọc Màu nền:</strong>
+        <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+            <input type="checkbox" class="chk-color-filter" value="yellow" onchange="window.apDungLoc()" style="width:16px; height:16px;">
+            <span style="width:16px; height:16px; background-color:#fff3cd; border:1px solid #ffeeba; display:inline-block; border-radius:3px;"></span> Có giá BHYT (chưa có Giá BV)
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+            <input type="checkbox" class="chk-color-filter" value="blue" onchange="window.apDungLoc()" style="width:16px; height:16px;">
+            <span style="width:16px; height:16px; background-color:#d1ecf1; border:1px solid #bee5eb; display:inline-block; border-radius:3px;"></span> Đã có BHYT & Mã DV Bệnh viện
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+            <input type="checkbox" class="chk-color-filter" value="white" onchange="window.apDungLoc()" style="width:16px; height:16px;">
+            <span style="width:16px; height:16px; background-color:#fff; border:1px solid #ccc; display:inline-block; border-radius:3px;"></span> Chưa được thiết lập giá
+        </label>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead id="tableHead"></thead>
+            <tbody id="dataBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<footer class="site-footer">
+    <b>Bản quyền thuộc về PHÒNG KẾ HOẠCH TỔNG HỢP - BỆNH VIỆN ĐA KHOA KHÁNH HÒA</b>
+    Hệ thống Quản lý Quy trình Kỹ thuật & Phác đồ điều trị <span class="version-tag">Phiên bản 2.0 ICD10</span>
+</footer>
+
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="window.dongModal('loginModal')">&times;</span>
+        <h3 style="text-align: center; margin-bottom: 20px;">Đăng Nhập Hệ Thống</h3>
+        <input type="text" id="username" placeholder="Tên đăng nhập...">
+        <input type="password" id="password" placeholder="Mật khẩu...">
+        <button class="btn" style="width:100%; background:var(--primary); font-size: 15px; padding: 12px; margin-top: 10px;" onclick="window.xuLyDangNhap()">Đăng Nhập</button>
+        <p id="loginError" style="color:red; font-size:13px; display:none; margin-top:15px; text-align:center; font-weight:bold;"></p>
+    </div>
+</div>
+
+<div id="pwdModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="window.dongModal('pwdModal')">&times;</span>
+        <h3>Đổi Mật Khẩu Cá Nhân</h3>
+        <input type="password" id="oldPwd" placeholder="Mật khẩu cũ">
+        <input type="password" id="newPwd" placeholder="Mật khẩu mới">
+        <input type="password" id="confirmPwd" placeholder="Xác nhận mật khẩu mới">
+        <button class="btn" style="width:100%; background:var(--primary); font-size: 14px; padding: 10px;" onclick="window.xuLyDoiMatKhau()">Lưu Mật Khẩu</button>
+    </div>
+</div>
+
+<div id="adminModal" class="modal">
+    <div class="modal-content large">
+        <span class="close-btn" onclick="window.dongModal('adminModal')">&times;</span>
+        <h3>Quản Lý Tài Khoản</h3>
+        <div style="background:#f9f9f9; padding:15px; border-radius:5px; margin-bottom:15px; border:1px solid #ddd;">
+            <div style="display:flex; gap:10px; align-items:center;">
+                <input type="text" id="newUsername" placeholder="Tên đăng nhập" style="margin:0; flex:1; min-width:0;">
+                <input type="text" id="newPassword" placeholder="Mật khẩu" style="margin:0; flex:1; min-width:0;">
+                <select id="newTenKhoa" style="margin:0; flex:1.5; min-width:0; padding:10px; border:1px solid #ccc; border-radius:4px;">
+                    <option value="">-- Chọn Phân quyền --</option>
+                    <optgroup label="Quyền Quản Trị"><option value="ROLE_ADMIN">Admin (Phòng KHTH)</option></optgroup>
+                    <optgroup label="Quyền Khoa Phòng" id="optGroupKhoa"></optgroup>
+                </select>
+                <button class="btn" style="background:var(--success); font-size:14px; padding:10px 20px;" onclick="window.taoTaiKhoan()">Tạo</button>
+            </div>
+        </div>
+        <div style="overflow-x: auto; max-height: 350px;">
+            <table class="user-table">
+                <thead><tr><th>STT</th><th>Tên Khoa / Quyền</th><th>Tên đăng nhập</th><th>Mật khẩu</th><th>Thao tác</th></tr></thead>
+                <tbody id="userListBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="uploadSinglePdfModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="window.dongModal('uploadSinglePdfModal')">&times;</span>
+        <h3>Tải lên File PDF Chính thức</h3>
+        <p style="font-size: 13px; color: #555; margin-top:0;">Quy trình: <b id="lblTenQuyTrinhUpload" style="color: var(--primary);"></b></p>
+        <div class="upload-box">
+            <label>File QTKT Chính thức đã ký (Chỉ PDF)</label>
+            <input type="file" id="fPdfChinhThuc" accept=".pdf">
+        </div>
+        <button class="btn" style="width:100%; background:var(--success); font-size: 14px; padding: 12px; margin-top: 10px;" onclick="window.xuLyUploadSinglePdf()">🚀 Xác nhận Tải lên</button>
+    </div>
+</div>
+
+<div id="uploadBatchModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="window.dongModal('uploadBatchModal')">&times;</span>
+        <h3>Đính kèm Quyết định & Biên bản</h3>
+        <p style="font-size: 13px; color: var(--danger); margin-top:0;">Bạn đang đính kèm file cho <b id="lblBatchCount" style="font-size: 16px;"></b> kỹ thuật đã chọn.</p>
+        <div class="upload-box"><label>1. Quyết định phê duyệt QTKT (PDF/Word)</label><input type="file" id="fQuyetDinhBatch" accept=".pdf,.doc,.docx"></div>
+        <div class="upload-box"><label>2. Biên bản họp Hội đồng KHKT (PDF/Word)</label><input type="file" id="fBienBanBatch" accept=".pdf,.doc,.docx"></div>
+        <button class="btn" style="width:100%; background:var(--purple); font-size: 14px; padding: 12px; margin-top: 10px;" onclick="window.xuLyUploadBatch()">🚀 Xác nhận Đính kèm hàng loạt</button>
+    </div>
+</div>
+
+<div id="detailModal" class="modal">
+    <div class="modal-content large">
+        <span class="close-btn" onclick="window.dongModal('detailModal')">&times;</span>
+        <h3 style="border-bottom:none; margin-bottom: 0;">THÔNG TIN QUY TRÌNH KỸ THUẬT</h3>
+        <h4 id="dtTenQT" style="color: var(--primary); margin-top: 5px;"></h4>
+        <div id="dtTopInfoArea"></div>
+        <div style="margin-top: 15px;"><b>1. Các khoa đăng ký áp dụng:</b><table class="user-table" style="margin-top: 5px;"><thead><tr><th>Tên Khoa</th><th>Trạng thái hiện tại</th></tr></thead><tbody id="dtKhoaBody"></tbody></table></div>
+        <div style="margin-top: 20px; background: #e9ecef; padding: 15px; border-radius: 8px;"><b>2. Tài liệu Phê duyệt (Xem Online):</b><div id="dtFilesArea" style="margin-top: 15px;"></div></div>
+        <div style="margin-top: 20px; background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba;"><b style="color: #856404;">3. Áp giá Dịch vụ tương đương (TT 23/2024):</b><div id="dtGiaDVArea" style="margin-top: 10px; font-size: 14px;"></div></div>
+        <div style="margin-top: 20px; background: #d1ecf1; padding: 15px; border-radius: 8px; border: 1px solid #bee5eb;"><b style="color: #0c5460;">4. Giá Dịch vụ tại Bệnh viện:</b><div id="dtMaDVBVArea" style="margin-top: 10px; font-size: 14px;"></div></div>
+        <div id="dtCrossLinkArea" style="margin-top: 20px; background: #e2e3e5; padding: 15px; border-radius: 8px; border: 1px solid #d6d8db;"><b style="color: #383d41;">5. Kỹ thuật Liên kết (Phụ lục 1 ↔ Phụ lục 2):</b><div id="dtCrossLinkContent" style="margin-top: 10px; font-size: 14px;"></div></div>
+    </div>
+</div>
+
+<div id="detailDVModal" class="modal">
+    <div class="modal-content large">
+        <span class="close-btn" onclick="window.dongModal('detailDVModal')">&times;</span>
+        <h3 style="border-bottom:none; margin-bottom: 0;">THÔNG TIN DỊCH VỤ BỆNH VIỆN</h3>
+        <h4 id="dvTenDV" style="color: var(--info); margin-top: 5px;"></h4>
+        <p style="font-size: 14px;">Mã Dịch vụ BV: <b id="dvMaDV"></b></p>
+        <div style="margin-top: 15px; background: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid #ccc;"><b style="color: #333;">1. Quy trình Kỹ thuật liên kết (Theo Mã Tương đương):</b><div id="dvQTKTArea" style="margin-top: 10px; font-size: 14px;"></div></div>
+        <div style="margin-top: 15px; background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba;"><b style="color: #856404;">2. Thông tin Dịch vụ BHYT tương đương (TT 23/2024):</b><div id="dvBHYTArea" style="margin-top: 10px; font-size: 14px;"></div></div>
+        <div style="margin-top: 15px;"><b>3. Các khoa đăng ký áp dụng Quy trình này:</b><table class="user-table" style="margin-top: 5px;"><thead><tr><th>Tên Khoa</th><th>Trạng thái hiện tại</th></tr></thead><tbody id="dvKhoaBody"></tbody></table></div>
+        <div style="margin-top: 20px; background: #e9ecef; padding: 15px; border-radius: 8px;"><b>4. Tài liệu Phê duyệt Chính thức (Của Quy trình liên kết):</b><div id="dvFilesArea" style="margin-top: 10px; font-size: 14px; line-height: 1.6;"></div></div>
+    </div>
+</div>
+
+<div id="icdModal" class="modal">
+    <div class="modal-content large">
+        <span class="close-btn" onclick="window.dongModal('icdModal')">&times;</span>
+        <h3 style="border-bottom:none; margin-bottom: 0; color:#0056b3;">CHI TIẾT MÃ BỆNH ICD-10</h3>
+        
+        <div style="display:flex; gap:15px; align-items:baseline; margin-top: 10px;">
+            <h2 id="icdMa" style="color: var(--danger); margin: 0; font-size: 28px;"></h2>
+            <h4 id="icdMaKhongDau" style="color: #888; margin: 0; font-weight: normal;"></h4>
+        </div>
+
+        <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+            <p style="font-size: 18px; margin-top:0;"><b>Tên bệnh (VN):</b> <span id="icdTenVn" style="color:var(--primary); font-weight:bold;"></span></p>
+            <p style="font-size: 16px; margin-bottom:0;"><b>Disease Name:</b> <span id="icdTenEn" style="font-style:italic; color:#555;"></span></p>
+        </div>
+
+        <table class="user-table" style="width:100%; margin-top: 15px;">
+            <tbody>
+                <tr>
+                    <td style="background:#f2f2f2; width:20%;"><b>Chương</b></td>
+                    <td><b id="icdMaChuong"></b> - <span id="icdTenChuong"></span> <br><i id="icdChapterName" style="color:#666;"></i></td>
+                </tr>
+                <tr>
+                    <td style="background:#f2f2f2;"><b>Nhóm chính</b></td>
+                    <td><b id="icdMaNhomChinh"></b> - <span id="icdTenNhomChinh"></span> <br><i id="icdMainGroupNameI" style="color:#666;"></i></td>
+                </tr>
+                <tr id="rowNhomPhu1">
+                    <td style="background:#fff3cd;"><b>Nhóm phụ 1</b></td>
+                    <td style="background:#fffaf0;"><b id="icdMaNhomPhu1"></b> - <span id="icdTenNhomPhu1"></span> <br><i id="icdSubGroupNameI" style="color:#666;"></i></td>
+                </tr>
+                <tr id="rowNhomPhu2">
+                    <td style="background:#d1ecf1;"><b>Nhóm phụ 2</b></td>
+                    <td style="background:#e8f8f5;"><b id="icdMaNhomPhu2"></b> - <span id="icdTenNhomPhu2"></span> <br><i id="icdSubGroupNameII" style="color:#666;"></i></td>
+                </tr>
+                <tr>
+                    <td style="background:#f2f2f2;"><b>Loại</b></td>
+                    <td><b id="icdMaLoai"></b> - <span id="icdTenLoai"></span> <br><i id="icdTypeName" style="color:#666;"></i></td>
+                </tr>
+                <tr>
+                    <td style="background:#f2f2f2;"><b>Ghi chú</b></td>
+                    <td id="icdGhiChu"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="background: #e9ecef; padding: 15px; border-radius: 8px; margin-top:20px;">
+            <b>📚 Phác đồ điều trị của các Khoa:</b>
+            <div id="icdPhacDoArea" style="margin-top: 15px;"></div>
+            <button class="btn" style="background:var(--success); margin-top:10px; font-size: 13px;" onclick="alert('Hệ thống đang mở luồng kết nối nộp Phác đồ. Vui lòng chờ bản cập nhật tiếp theo!')">📤 Nộp Phác đồ mới</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
