@@ -344,7 +344,7 @@ window.toggleMultiSelect = function(state) {
         document.getElementById('batchStatusText').innerHTML = `<b style="color:var(--danger)">Vui lòng TICK CHỌN các ô vuông trong bảng bên dưới.</b>`;
     } else {
         document.getElementById('btnStartBatch').style.display = 'inline-block'; document.getElementById('btnConfirmBatch').style.display = 'none'; document.getElementById('btnCancelBatch').style.display = 'none';
-        document.getElementById('batchStatusText').innerHTML = `<b>Công cụ Admin:</b> Tick chọn các kỹ thuật/phác đồ bên dưới để tải hàng loạt.`;
+        document.getElementById('batchStatusText').innerHTML = `<b>Công cụ Admin:</b> Tick chọn các kỹ thuật bên dưới để tải hàng loạt.`;
     }
     window.apDungLoc(); 
 }
@@ -593,15 +593,14 @@ window.renderTable = function(data = null) {
                 if (myDept && Array.isArray(myDept.danhMucQTKT)) {
                     myDept.danhMucQTKT.forEach(qt => {
                         if(!qt) return;
-                        if(qt.ma) myDeptCartSet.add(window.normalizeCodeFast(qt.ma).toLowerCase());
-                        if(qt.maLienKet) myDeptCartSet.add(window.normalizeCodeFast(qt.maLienKet).toLowerCase());
+                        if(qt.ma) myDeptCartSet.add(window.normalizeCodeFast(qt.ma));
+                        if(qt.maLienKet) myDeptCartSet.add(window.normalizeCodeFast(qt.maLienKet));
                         if(qt.ten) myDeptCartSet.add(window.robustNormalize(qt.ten));
                     });
                 }
                 if (myDept && Array.isArray(myDept.danhMucPhacDo)) {
                     myDept.danhMucPhacDo.forEach(pd => {
-                        if(pd && pd.maBenh) myDeptPDCartSet.add(String(pd.maBenh).trim().toLowerCase());
-                        if(pd && pd.maBenhKhongDau) myDeptPDCartSet.add(String(pd.maBenhKhongDau).trim().toLowerCase());
+                        if(pd && pd.maBenh) myDeptPDCartSet.add(String(pd.maBenh).trim());
                         if(pd && pd.tenBenh) myDeptPDCartSet.add(window.robustNormalize(pd.tenBenh));
                     });
                 }
@@ -623,7 +622,7 @@ window.renderTable = function(data = null) {
                 let rowHtml = `<tr>`;
                 
                 if (currentTab === 'ICD10' || currentTabType === 'PHAC_DO') {
-                    let itemIdentifier = item.maBenh || item.maBenhKhongDau || '';
+                    let itemIdentifier = item.maBenh || '';
                     let itemTenBenh = item.tenBenh || item.diseaseName || '';
                     
                     let clickEvent = `window.moChiTietICD('${window.encodeForJS(itemIdentifier || itemTenBenh)}')`;
@@ -639,32 +638,32 @@ window.renderTable = function(data = null) {
                     if (currentTabType === 'PHAC_DO') {
                         if(tt === 'DA_PHE_DUYET') {
                             fileHtml += `<span class="badge badge-success" style="font-size:12px; padding:6px 10px;">Final (Đã phê duyệt)</span><br><span style="font-size:12px; color:#555;">(Xem file trong chi tiết)</span>`;
-                            if (currentUser && currentUser.role === 'admin' && !isMultiSelectMode) { fileHtml += `<br><button class="btn" style="background:var(--danger); margin-top:5px;" onclick="window.thayDoiTrangThai('${realTenKhoa}', '${window.encodeForJS(itemIdentifier)}', 'REVERT_FINAL', 'PHAC_DO', '${window.encodeForJS(itemTenBenh)}')">🔙 Hủy Phê Duyệt</button>`; }
+                            if (currentUser && currentUser.role === 'admin' && !isMultiSelectMode) { fileHtml += `<br><button class="btn" style="background:var(--danger); margin-top:5px;" onclick="window.thayDoiTrangThai('${realTenKhoa}', '${window.encodeForJS(item.maBenh)}', 'REVERT_FINAL', 'PHAC_DO', '${window.encodeForJS(item.tenBenh)}')">🔙 Hủy Phê Duyệt</button>`; }
                         } else {
                             if(tt === 'CHUA_NOP') fileHtml += `<span class="badge badge-gray" style="margin-bottom:5px; display:inline-block;">Chưa nộp</span><br>`; 
                             else if(tt === 'CHO_DUYET') fileHtml += `<span class="badge badge-warning" style="margin-bottom:5px; display:inline-block;">Chờ duyệt</span><br>`; 
                             else if(tt === 'KHONG_DUYET') fileHtml += `<span class="badge badge-danger" style="margin-bottom:5px; display:inline-block;">Từ chối</span><br>`;
 
-                            let dispNameLocal = mapNames[itemIdentifier || itemTenBenh] || "📄 Phác đồ đính kèm";
+                            let dispNameLocal = mapNames[item.maBenh || item.tenBenh] || "📄 Phác đồ đính kèm";
 
                             if (currentUser && currentUser.role === 'khoa' && currentUser.tenKhoa === currentTab) {
                                 if(item.fileKhoa && tt !== 'CHUA_NOP') {
                                     fileHtml += `<div style="display:flex; align-items:center; gap:5px; margin-top:5px;">
                                                     <a href="${item.fileKhoa}" target="_blank" style="font-size:13px; color:blue; max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${dispNameLocal}">${dispNameLocal}</a>
-                                                    <span style="color:red; cursor:pointer; font-weight:bold; font-size:14px; background:#ffe6e6; padding:2px 5px; border-radius:4px;" title="Xóa vĩnh viễn file này" onclick="window.xoaFileKhoa('${window.encodeForJS(itemIdentifier)}', 'PHAC_DO', '${window.encodeForJS(itemTenBenh)}')">❌</span>
+                                                    <span style="color:red; cursor:pointer; font-weight:bold; font-size:14px; background:#ffe6e6; padding:2px 5px; border-radius:4px;" title="Xóa vĩnh viễn file này" onclick="window.xoaFileKhoa('${window.encodeForJS(item.maBenh)}', 'PHAC_DO', '${window.encodeForJS(item.tenBenh)}')">❌</span>
                                                  </div>`;
                                 } else {
-                                    fileHtml += `<button class="btn" style="background:var(--info); margin-top:5px; font-weight:bold;" onclick="window.chuanBiNopKhoa('${window.encodeForJS(itemIdentifier)}', 'PHAC_DO', '${window.encodeForJS(itemTenBenh)}')">📤 Nộp file</button>`;
+                                    fileHtml += `<button class="btn" style="background:var(--info); margin-top:5px; font-weight:bold;" onclick="window.chuanBiNopKhoa('${window.encodeForJS(item.maBenh)}', 'PHAC_DO', '${window.encodeForJS(item.tenBenh)}')">📤 Nộp file</button>`;
                                 }
                             } 
                             else if (currentUser && currentUser.role === 'admin') {
                                 if(item.fileKhoa && tt !== 'CHUA_NOP') {
-                                    let dispNameAd = mapNames[itemIdentifier || itemTenBenh] || "Bản Khoa nộp";
+                                    let dispNameAd = mapNames[item.maBenh || item.tenBenh] || "Bản Khoa nộp";
                                     fileHtml += `<a href="${item.fileKhoa}" target="_blank" style="font-size:12px; color:blue; display:inline-block; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top:5px;" title="${dispNameAd}">📄 ${dispNameAd}</a><br>`;
                                 }
                                 if(tt === 'CHO_DUYET' && !isMultiSelectMode) { 
-                                    fileHtml += `<button class="btn" style="background:var(--success); margin-top:5px;" onclick="window.chuanBiUpSinglePdf('${window.encodeForJS(itemIdentifier)}', '${realTenKhoa}', '${window.encodeForJS(itemTenBenh)}', 'PHAC_DO')">📥 Tải PDF Lên</button> `; 
-                                    fileHtml += `<button class="btn" style="background:var(--danger); margin-top:5px;" onclick="window.thayDoiTrangThai('${realTenKhoa}', '${window.encodeForJS(itemIdentifier)}', 'REJECT_KHOA', 'PHAC_DO', '${window.encodeForJS(itemTenBenh)}')">❌ Từ chối</button>`; 
+                                    fileHtml += `<button class="btn" style="background:var(--success); margin-top:5px;" onclick="window.chuanBiUpSinglePdf('${window.encodeForJS(item.maBenh)}', '${realTenKhoa}', '${window.encodeForJS(item.tenBenh)}', 'PHAC_DO')">📥 Tải PDF Lên</button> `; 
+                                    fileHtml += `<button class="btn" style="background:var(--danger); margin-top:5px;" onclick="window.thayDoiTrangThai('${realTenKhoa}', '${window.encodeForJS(item.maBenh)}', 'REJECT_KHOA', 'PHAC_DO', '${window.encodeForJS(item.tenBenh)}')">❌ Từ chối</button>`; 
                                 }
                             }
                         }
@@ -673,13 +672,13 @@ window.renderTable = function(data = null) {
                     let actionHtml = '';
                     if (currentUser && currentUser.role === 'khoa' && currentTab === 'ICD10') {
                         let inCart = false;
-                        if (itemIdentifier) inCart = myDeptPDCartSet.has(String(itemIdentifier).trim().toLowerCase());
+                        if (itemIdentifier) inCart = myDeptPDCartSet.has(String(itemIdentifier).trim());
                         if (!inCart && itemTenBenh) inCart = myDeptPDCartSet.has(window.robustNormalize(itemTenBenh));
 
                         if (inCart) {
-                            actionHtml = `<td style="text-align:center;"><button class="btn btn-remove" onclick="window.xoaPhacDo('${window.encodeForJS(itemIdentifier)}', '${currentUser.tenKhoa}', '${window.encodeForJS(itemTenBenh)}')">🗑️ Xóa Phác Đồ</button></td>`;
+                            actionHtml = `<td style="text-align:center;"><button class="btn btn-remove" onclick="window.xoaPhacDo('${window.encodeForJS(itemIdentifier)}', '${currentUser.tenKhoa}', '${window.encodeForJS(itemTenBenh)}')">🗑️ Xóa</button></td>`;
                         } else {
-                            actionHtml = `<td style="text-align:center;"><button class="btn btn-add" onclick="window.bocPhacDo('${window.encodeForJS(itemIdentifier)}', '${window.encodeForJS(itemTenBenh)}')">+ Thêm Phác Đồ</button></td>`;
+                            actionHtml = `<td style="text-align:center;"><button class="btn btn-add" onclick="window.bocPhacDo('${window.encodeForJS(itemIdentifier)}', '${window.encodeForJS(itemTenBenh)}')">+ Thêm</button></td>`;
                         }
                     } else if (currentTabType === 'PHAC_DO' && currentUser && currentUser.role === 'khoa') {
                         if(tt === 'DA_PHE_DUYET') { actionHtml = `<td style="text-align:center;"><span class="badge badge-locked">🔒 Đã chốt</span></td>`; } 
@@ -689,8 +688,8 @@ window.renderTable = function(data = null) {
                     }
 
                     if (isMultiSelectMode && currentTabType === 'PHAC_DO') {
-                        let isChecked = selectedTechniques.find(function(x) { return x && x.tenKhoa === realTenKhoa && x.maQuyTrinh === itemIdentifier; }) ? "checked" : "";
-                        rowHtml += `<td style="text-align:center;"><input type="checkbox" style="width:18px; height:18px; cursor:pointer;" onchange="window.toggleSelectRow(this, '${realTenKhoa}', '${window.encodeForJS(itemIdentifier)}')" ${isChecked}></td>`;
+                        let isChecked = selectedTechniques.find(function(x) { return x && x.tenKhoa === realTenKhoa && x.maQuyTrinh === item.maBenh; }) ? "checked" : "";
+                        rowHtml += `<td style="text-align:center;"><input type="checkbox" style="width:18px; height:18px; cursor:pointer;" onchange="window.toggleSelectRow(this, '${realTenKhoa}', '${window.encodeForJS(item.maBenh)}')" ${isChecked}></td>`;
                     }
 
                     let rowDict = {
@@ -883,9 +882,7 @@ window.renderTable = function(data = null) {
 }
 
 window.capNhatTieuDe = function() {
-    const isDeptTab = DANH_SACH_KHOA.includes(currentTab); 
-    const isSuperTab = currentTab.startsWith('KHTH_');
-    let textRole = "";
+    const isDeptTab = DANH_SACH_KHOA.includes(currentTab); let textRole = "";
     if(!currentUser) textRole = "(Chế độ Khách - Chỉ Xem)"; else if (currentUser.role === 'admin') textRole = "(Quyền Quản Trị Viên)"; else textRole = `(Quyền: ${currentUser.tenKhoa})`;
     
     const batchToolbar = document.getElementById('batchToolbar');
