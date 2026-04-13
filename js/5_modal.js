@@ -1,3 +1,18 @@
+// 🟢 BỘ LỌC TIỀN TỆ THÔNG MINH CHO MODAL (CHỐNG LỖI NaN)
+window.formatTienModal = function(val) { 
+    if (val === null || val === undefined || String(val).trim() === '') return 'Chưa có giá';
+    let strVal = String(val).trim();
+    
+    // Đề phòng trường hợp trong Database lưu nhầm chữ NaN từ đợt lỗi trước
+    if (strVal.includes('NaN')) return 'Chưa có giá';
+    
+    let digitsOnly = strVal.replace(/[^\d]/g, '');
+    if (digitsOnly === '') return strVal; // Nếu toàn chữ (ví dụ "Theo hóa đơn") thì trả về nguyên văn chữ đó
+    
+    let num = parseInt(digitsOnly, 10);
+    return isNaN(num) ? strVal : num.toLocaleString('vi-VN') + ' đ'; 
+};
+
 window.moChiTietDV = function(encodedMaDichVu, encodedMaTuongDuong, encodedTenDichVu) {
     let maDichVu = decodeURIComponent(encodedMaDichVu || "");
     let maTuongDuong = decodeURIComponent(encodedMaTuongDuong || "");
@@ -42,7 +57,8 @@ window.moChiTietDV = function(encodedMaDichVu, encodedMaTuongDuong, encodedTenDi
     
     let bhytHtml = '';
     if (giaDVInfo) {
-        let formattedPrice = giaDVInfo.giaMax ? Number(giaDVInfo.giaMax).toLocaleString('vi-VN') + ' đ' : 'Chưa có giá';
+        // ÁP DỤNG BỘ LỌC TIỀN TỆ
+        let formattedPrice = window.formatTienModal(giaDVInfo.giaMax);
         bhytHtml = `<table class="user-table" style="width:100%;"><tr><td style="background:#f2f2f2; width:30%;"><b>Mã tương đương:</b></td><td>${giaDVInfo.maTuongDuong || ''}</td></tr><tr><td style="background:#f2f2f2;"><b>Tên Dịch vụ BHYT:</b></td><td>${giaDVInfo.tenDichVu || giaDVInfo.tenKyThuat || ''}</td></tr><tr><td style="background:#f2f2f2;"><b>Giá phê duyệt:</b></td><td style="color:red; font-weight:bold;">${formattedPrice}</td></tr></table>`;
     } else { 
         bhytHtml = `<span style="color:#856404;">Không tìm thấy Dịch vụ BHYT (TT23) khớp với mã tương đương này.</span>`; 
@@ -81,7 +97,7 @@ window.moChiTietDV = function(encodedMaDichVu, encodedMaTuongDuong, encodedTenDi
                         let safeQtTen = qt.ten ? String(qt.ten) : "";
                         let safeQtMa = qt.ma || qt.maLienKet || qtMaGoc;
                         if (currentUser && currentUser.role === 'admin') { 
-                            fileHtml += `<button class="btn" style="background:var(--warning); color:black; margin:0;" onclick="window.chuanBiUpSinglePdf('${window.encodeForJS(safeQtMa)}', '${d.tenKhoa}', '${window.encodeForJS(safeQtTen)}')">🔄 Cập nhật PDF</button>`; 
+                            fileHtml += `<button class="btn" style="background:var(--warning); color:black; margin:0;" onclick="window.chuanBiUpSinglePdf('${window.encodeForJS(safeQtMa)}', '${d.tenKhoa}', '${window.encodeForJS(safeQtTen)}', 'QTKT')">🔄 Cập nhật PDF</button>`; 
                         }
                         fileHtml += `</div>`;
                     }
@@ -183,7 +199,7 @@ window.moChiTiet = function(encodedMa, encodedTen, encodedPhanLoai, encodedQuyet
                     if(qt.filePdfChinhThuc) {
                         fileHtml += `<div style="display:flex; align-items:center; gap:10px; margin-top:5px; margin-bottom:5px;"><a class="file-online-link" href="${qt.filePdfChinhThuc}" target="_blank" style="background:#28a745; color:white; border:none; width:auto; margin:0;">📄 Quy trình PDF Chính thức</a>`;
                         if (currentUser && currentUser.role === 'admin') {
-                            fileHtml += `<button class="btn" style="background:var(--warning); color:black; margin:0;" onclick="window.chuanBiUpSinglePdf('${window.encodeForJS(ma)}', '${d.tenKhoa}', '${window.encodeForJS(ten)}')">🔄 Cập nhật PDF</button>`;
+                            fileHtml += `<button class="btn" style="background:var(--warning); color:black; margin:0;" onclick="window.chuanBiUpSinglePdf('${window.encodeForJS(ma)}', '${d.tenKhoa}', '${window.encodeForJS(ten)}', 'QTKT')">🔄 Cập nhật PDF</button>`;
                         }
                         fileHtml += `</div>`;
                     }
@@ -214,7 +230,8 @@ window.moChiTiet = function(encodedMa, encodedTen, encodedPhanLoai, encodedQuyet
     if (matchedPrices.length > 0) {
         let htmlGia = `<table class="user-table" style="margin-top: 5px; width: 100%; background: white;"><thead><tr><th>Mã tương đương</th><th>Tên Dịch vụ BHYT</th><th>Giá phê duyệt</th></tr></thead><tbody>`;
         matchedPrices.forEach(function(p) { 
-            let formattedPrice = p.giaMax ? Number(p.giaMax).toLocaleString('vi-VN') + ' đ' : 'Chưa có giá'; 
+            // ÁP DỤNG BỘ LỌC TIỀN TỆ MỚI
+            let formattedPrice = window.formatTienModal(p.giaMax); 
             htmlGia += `<tr><td style="text-align:center;"><b>${p.maTuongDuong || ''}</b></td><td>${p.tenDichVu || p.tenKyThuat || ''}</td><td style="text-align:right; color:red; font-weight:bold;">${formattedPrice}</td></tr>`; 
         });
         htmlGia += `</tbody></table>`; 
@@ -235,10 +252,11 @@ window.moChiTiet = function(encodedMa, encodedTen, encodedPhanLoai, encodedQuyet
     if (matchedBVPrices.length > 0) {
         let htmlGiaBV = `<table class="user-table" style="margin-top: 5px; width: 100%; background: white;"><thead><tr><th>Mã dịch vụ</th><th>Tên dịch vụ (BV)</th><th>Giá BHYT</th><th>Giá Viện Phí</th><th>Giá Yêu Cầu</th><th>Giá NN</th></tr></thead><tbody>`;
         matchedBVPrices.forEach(function(p) {
-            let gBHYT = p.giaBHYT ? Number(p.giaBHYT).toLocaleString('vi-VN') + ' đ' : '-'; 
-            let gVP = p.giaVienPhi ? Number(p.giaVienPhi).toLocaleString('vi-VN') + ' đ' : '-'; 
-            let gYC = p.giaYeuCau ? Number(p.giaYeuCau).toLocaleString('vi-VN') + ' đ' : '-'; 
-            let gNN = p.giaNuocNgoai ? Number(p.giaNuocNgoai).toLocaleString('vi-VN') + ' đ' : '-';
+            // ÁP DỤNG BỘ LỌC TIỀN TỆ MỚI
+            let gBHYT = window.formatTienModal(p.giaBHYT); if(gBHYT === 'Chưa có giá') gBHYT = '-';
+            let gVP = window.formatTienModal(p.giaVienPhi); if(gVP === 'Chưa có giá') gVP = '-';
+            let gYC = window.formatTienModal(p.giaYeuCau); if(gYC === 'Chưa có giá') gYC = '-';
+            let gNN = window.formatTienModal(p.giaNuocNgoai); if(gNN === 'Chưa có giá') gNN = '-';
             htmlGiaBV += `<tr><td style="text-align:center;"><b>${p.maDichVu || ''}</b></td><td>${p.tenDichVu || ''}</td><td style="text-align:right; color:green; font-weight:bold;">${gBHYT}</td><td style="text-align:right; color:blue; font-weight:bold;">${gVP}</td><td style="text-align:right; color:purple; font-weight:bold;">${gYC}</td><td style="text-align:right; color:red; font-weight:bold;">${gNN}</td></tr>`;
         });
         htmlGiaBV += `</tbody></table>`; 
@@ -300,11 +318,9 @@ window.moChiTiet = function(encodedMa, encodedTen, encodedPhanLoai, encodedQuyet
     window.moModal('detailModal');
 }
 
-// 🟢 CẬP NHẬT: GIAO DIỆN BẢNG THÔNG TIN MÃ BỆNH ICD-10 ĐẦY ĐỦ 21 CỘT
 window.moChiTietICD = function(encodedIdentifier) {
     let identifier = decodeURIComponent(encodedIdentifier || "");
     
-    // Tìm kiếm theo Mã Bệnh, Mã Không Dấu hoặc Tên Bệnh
     let item = (database.ICD10 || []).find(x => 
         x && (x.maBenh === identifier || x.maBenhKhongDau === identifier || x.tenBenh === identifier || x.diseaseName === identifier)
     );
@@ -317,17 +333,14 @@ window.moChiTietICD = function(encodedIdentifier) {
     document.getElementById('icdTenVn').innerText = item.tenBenh || 'Chưa có thông tin Tên bệnh/Chẩn đoán';
     document.getElementById('icdTenEn').innerText = item.diseaseName || 'Không có';
     
-    // Chương
     document.getElementById('icdMaChuong').innerText = item.maChuong || '';
     document.getElementById('icdTenChuong').innerText = item.tenChuong || 'Không phân loại';
     document.getElementById('icdChapterName').innerText = item.chapterName || '';
     
-    // Nhóm chính
     document.getElementById('icdMaNhomChinh').innerText = item.maNhomChinh || '';
     document.getElementById('icdTenNhomChinh').innerText = item.tenNhomChinh || 'Không phân loại';
     document.getElementById('icdMainGroupNameI').innerText = item.mainGroupNameI || '';
     
-    // Nhóm phụ 1 (Tự động ẩn nếu trống)
     let rowNhomPhu1 = document.getElementById('rowNhomPhu1');
     if (item.maNhomPhu1 || item.tenNhomPhu1) {
         rowNhomPhu1.style.display = 'table-row';
@@ -338,7 +351,6 @@ window.moChiTietICD = function(encodedIdentifier) {
         rowNhomPhu1.style.display = 'none';
     }
     
-    // Nhóm phụ 2 (Tự động ẩn nếu trống)
     let rowNhomPhu2 = document.getElementById('rowNhomPhu2');
     if (item.maNhomPhu2 || item.tenNhomPhu2) {
         rowNhomPhu2.style.display = 'table-row';
@@ -349,16 +361,53 @@ window.moChiTietICD = function(encodedIdentifier) {
         rowNhomPhu2.style.display = 'none';
     }
     
-    // Loại
     document.getElementById('icdMaLoai').innerText = item.maLoai || '';
     document.getElementById('icdTenLoai').innerText = item.tenLoai || '';
     document.getElementById('icdTypeName').innerText = item.typeName || '';
     
-    // Ghi chú
     document.getElementById('icdGhiChu').innerText = item.ghiChu || 'Không có';
     
-    // Area Phác đồ
-    document.getElementById('icdPhacDoArea').innerHTML = `<p style="color:#666;">Chưa có phác đồ nào được nộp cho mã bệnh này.</p>`;
+    let phacDoHtml = '';
+    let coPhacDo = false;
+
+    if(Array.isArray(database.depts)) {
+        database.depts.forEach(function(d) {
+            if(!d || !Array.isArray(d.danhMucPhacDo)) return;
+            const pd = d.danhMucPhacDo.find(function(x) { 
+                return x && String(x.maBenh) === String(item.maBenh); 
+            });
+            if(pd) {
+                coPhacDo = true; 
+                let ttRaw = pd.trangThai || 'CHUA_NOP'; 
+                let tt = (ttRaw === 'DA_DUYET' || ttRaw === 'CHO_HDKHKT') ? 'CHO_DUYET' : ttRaw; 
+                let ttStr = "Chưa nộp"; 
+                let col = "gray";
+                
+                if(tt === 'CHO_DUYET') { ttStr = "Chờ duyệt"; col = "var(--warning)"; } 
+                else if(tt === 'KHONG_DUYET') { ttStr = "Bị từ chối"; col = "var(--danger)"; } 
+                else if(tt === 'DA_PHE_DUYET') { ttStr = "Đã phê duyệt"; col = "var(--success)"; }
+                
+                phacDoHtml += `<div style="margin-bottom:10px; padding-bottom:10px; border-bottom: 1px dashed #ccc;">
+                                <b>Khoa ${d.tenKhoa}</b> - Trạng thái: <span style="color:${col}; font-weight:bold;">${ttStr}</span><br>`;
+                
+                if(pd.filePdfChinhThuc) {
+                    phacDoHtml += `<div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+                                    <a class="file-online-link" href="${pd.filePdfChinhThuc}" target="_blank" style="background:#28a745; color:white; border:none; width:auto; margin:0;">📄 Xem Phác đồ (Bản chính thức)</a>`;
+                    if (currentUser && currentUser.role === 'admin') {
+                        phacDoHtml += `<button class="btn" style="background:var(--warning); color:black; margin:0;" onclick="window.chuanBiUpSinglePdf('${window.encodeForJS(pd.maBenh)}', '${d.tenKhoa}', '${window.encodeForJS(item.tenBenh)}', 'PHAC_DO')">🔄 Cập nhật PDF</button>`;
+                    }
+                    phacDoHtml += `</div>`;
+                } else if (pd.fileKhoa && currentUser && (currentUser.role === 'admin' || currentUser.tenKhoa === d.tenKhoa)) {
+                    phacDoHtml += `<a class="file-online-link" href="${pd.fileKhoa}" target="_blank" style="margin-top:5px;">📄 Xem Phác đồ (Bản Khoa nộp)</a>`;
+                }
+                phacDoHtml += `</div>`;
+            }
+        });
+    }
     
+    let pdArea = document.getElementById('icdPhacDoArea');
+    if (coPhacDo) pdArea.innerHTML = phacDoHtml;
+    else pdArea.innerHTML = `<p style="color:#666;">Chưa có phác đồ nào được nộp cho mã bệnh này.</p>`;
+
     window.moModal('icdModal');
 }
