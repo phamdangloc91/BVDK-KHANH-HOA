@@ -715,7 +715,7 @@ window.exportToExcel = function() {
     }, 50);
 }
 
-// 🟢 TẠO INPUT ẨN ĐỂ NHẬN FILE CẬP NHẬT PHÂN LOẠI
+// TẠO INPUT ẨN ĐỂ NHẬN FILE CẬP NHẬT PHÂN LOẠI
 window.addEventListener('DOMContentLoaded', function() {
     if (!document.getElementById('fileCapNhatPhanLoai')) {
         let fileInput = document.createElement('input');
@@ -728,7 +728,6 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// 🟢 KÍCH HOẠT NÚT TẢI FILE
 window.chuanBiCapNhatPhanLoai = function() {
     if (currentTab !== 'PL1' && currentTab !== 'PL2') {
         alert("⚠️ Vui lòng chuyển sang Tab Phụ lục 1 hoặc Phụ lục 2 để sử dụng tính năng Cập nhật Phân loại!");
@@ -737,7 +736,6 @@ window.chuanBiCapNhatPhanLoai = function() {
     document.getElementById('fileCapNhatPhanLoai').click();
 };
 
-// 🟢 XỬ LÝ CẬP NHẬT PHÂN LOẠI (HỖ TRỢ ĐỊNH DẠNG MA TRẬN CSV/EXCEL)
 window.xuLyCapNhatPhanLoai = async function() {
     const fileInput = document.getElementById('fileCapNhatPhanLoai');
     const file = fileInput.files[0];
@@ -752,7 +750,6 @@ window.xuLyCapNhatPhanLoai = async function() {
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
 
-                // 1. Tìm dòng tiêu đề
                 let headerRowIndex = -1;
                 let headers = [];
                 for (let i = 0; i < Math.min(20, rawData.length); i++) {
@@ -770,9 +767,8 @@ window.xuLyCapNhatPhanLoai = async function() {
                     return;
                 }
 
-                // 2. Phân tích các cột
                 let colMa = -1, colTen = -1;
-                let colPhanLoaiMap = {}; // Bản đồ lưu vị trí cột và tên phân loại tương ứng
+                let colPhanLoaiMap = {}; 
                 const validClasses = ["pdb", "p1", "p2", "p3", "tdb", "t1", "t2", "t3"];
 
                 headers.forEach((h, idx) => {
@@ -780,7 +776,6 @@ window.xuLyCapNhatPhanLoai = async function() {
                     if (h.includes("ma ky thuat") || h.includes("ma ki thuat") || h === "ma") colMa = idx;
                     if (h.includes("ten ky thuat") || h.includes("ten ki thuat") || h === "ten") colTen = idx;
 
-                    // Nếu là cột P1, P2... trong dạng ma trận
                     validClasses.forEach(vc => {
                         if (h === vc) {
                             let standardClass = vc.toUpperCase();
@@ -790,13 +785,11 @@ window.xuLyCapNhatPhanLoai = async function() {
                         }
                     });
 
-                    // Nếu là 1 cột "Phân loại" chung
                     if (h === "phan loai" || h.includes("phan loai")) {
                         colPhanLoaiMap[idx] = "SINGLE_COL";
                     }
                 });
 
-                // 3. Trích xuất danh sách cập nhật từ Excel
                 let updateMap = [];
                 for (let i = headerRowIndex + 1; i < rawData.length; i++) {
                     let rowData = rawData[i];
@@ -806,26 +799,28 @@ window.xuLyCapNhatPhanLoai = async function() {
                     let ten = colTen !== -1 ? String(rowData[colTen] || "").trim() : "";
                     let phanLoai = "";
 
-                    // Tìm xem ô nào trong ma trận có giá trị
                     for (let colIdx in colPhanLoaiMap) {
                         let val = rowData[colIdx];
                         if (val && String(val).trim() !== "") {
                             if (colPhanLoaiMap[colIdx] === "SINGLE_COL") {
                                 phanLoai = String(val).trim();
                             } else {
-                                // Lấy tên phân loại dựa vào cột nó đang đứng
                                 phanLoai = colPhanLoaiMap[colIdx]; 
                             }
                             break;
                         }
                     }
 
-                    if ((ma || ten) && phanLoai) {
+                    // NẾU TẤT CẢ CÁC Ô ĐỀU TRỐNG THÌ MẶC ĐỊNH LÀ "KPL"
+                    if (phanLoai === "") {
+                        phanLoai = "KPL";
+                    }
+
+                    if (ma || ten) {
                         updateMap.push({ ma: window.normalizeCodeFast(ma), ten: window.robustNormalize(ten), phanLoai: phanLoai });
                     }
                 }
 
-                // 4. Áp dụng vào CSDL trên Web
                 let targetDB = database[currentTab];
                 if (!Array.isArray(targetDB) || (currentTab !== 'PL1' && currentTab !== 'PL2')) {
                     alert("Chức năng này chỉ áp dụng cho bảng Phụ lục 1 và Phụ lục 2!");
@@ -840,9 +835,7 @@ window.xuLyCapNhatPhanLoai = async function() {
                     let itemTen = window.robustNormalize(item.ten || "");
 
                     let matched = null;
-                    // Ưu tiên 1: Khớp theo Mã
                     if (itemMa) matched = updateMap.find(u => u.ma && window.isCodeMatch(itemMa, u.ma));
-                    // Ưu tiên 2: Khớp theo Tên (chỉ dùng khi không có Mã)
                     if (!matched && itemTen) matched = updateMap.find(u => u.ten && u.ten === itemTen);
 
                     if (matched) {
@@ -851,13 +844,11 @@ window.xuLyCapNhatPhanLoai = async function() {
                     }
                 });
 
-                // 5. Gửi dữ liệu đã cập nhật lên Server
                 if (updateCount > 0) {
                     const formData = new FormData();
                     formData.append('tabName', currentTab);
                     formData.append('tabData', JSON.stringify(targetDB));
                     
-                    // Tạo một file ảo để pass qua hàm upload-and-save của backend
                     const blob = new Blob(["dummy text"], { type: "text/plain" });
                     formData.append('fileExcel', blob, "update_phan_loai.txt");
 
