@@ -1,200 +1,200 @@
-window.moModalBatch = function () {
+window.moModalBatch = function() {
     if (selectedTechniques.length === 0) return alert("Vui lòng tick chọn ít nhất 1 dòng trong bảng!");
     document.getElementById('lblBatchCount').innerText = selectedTechniques.length;
     window.moModal('uploadBatchModal');
 }
 
-window.xuLyUploadBatch = async function () {
-    const fQD = document.getElementById('fQuyetDinhBatch').files[0];
+window.xuLyUploadBatch = async function() {
+    const fQD = document.getElementById('fQuyetDinhBatch').files[0]; 
     const fBB = document.getElementById('fBienBanBatch').files[0];
-
+    
     if (!fQD && !fBB) return alert("Bạn phải chọn ít nhất 1 file để tải lên!");
-
+    
     window.showLoading(true);
     try {
-        const formData = new FormData();
+        const formData = new FormData(); 
         formData.append('items', JSON.stringify(selectedTechniques));
-        if (fQD) formData.append('fQuyetDinh', fQD);
+        if (fQD) formData.append('fQuyetDinh', fQD); 
         if (fBB) formData.append('fBienBan', fBB);
-
-        const res = await fetch('/api/upload/batch-qdbb', { method: 'POST', body: formData });
-        const data = await res.json();
+        
+        const res = await fetch('/api/upload/batch-qdbb', { method: 'POST', body: formData }); 
+        const data = await res.json(); 
         alert(data.message);
-
-        if (res.ok) {
-            window.dongModal('uploadBatchModal');
-            document.getElementById('fQuyetDinhBatch').value = '';
-            document.getElementById('fBienBanBatch').value = '';
-            window.toggleMultiSelect(false);
-            window.layDuLieu();
+        
+        if (res.ok) { 
+            window.dongModal('uploadBatchModal'); 
+            document.getElementById('fQuyetDinhBatch').value = ''; 
+            document.getElementById('fBienBanBatch').value = ''; 
+            window.toggleMultiSelect(false); 
+            window.layDuLieu(); 
         }
-    } catch (e) {
-        alert("Lỗi tải file!");
-    }
+    } catch(e) { 
+        alert("Lỗi tải file!"); 
+    } 
     window.showLoading(false);
 }
 
-window.chuanBiNopKhoa = function (encodedMa, type = 'QTKT', encodedTen = '') {
+window.chuanBiNopKhoa = function(encodedMa, type='QTKT', encodedTen='') { 
     let ma = decodeURIComponent(encodedMa || "");
     let ten = decodeURIComponent(encodedTen || "");
-    targetUpload = { ma: ma, ten: ten, tenKhoa: currentUser.tenKhoa, type: type };
-    document.getElementById('fileNopKhoa').click();
+    targetUpload = { ma: ma, ten: ten, tenKhoa: currentUser.tenKhoa, type: type }; 
+    document.getElementById('fileNopKhoa').click(); 
 }
 
-window.xuLyNopFileKhoa = async function () {
-    const fileInput = document.getElementById('fileNopKhoa');
-    if (!fileInput.files[0]) return;
-
+window.xuLyNopFileKhoa = async function() {
+    const fileInput = document.getElementById('fileNopKhoa'); 
+    if (!fileInput.files[0]) return; 
+    
     try {
         let mapNames = JSON.parse(localStorage.getItem('fileNamesMap') || '{}');
         mapNames[targetUpload.ma] = fileInput.files[0].name;
         localStorage.setItem('fileNamesMap', JSON.stringify(mapNames));
-    } catch (e) { }
+    } catch(e) {}
 
     window.showLoading(true);
     try {
-        const formData = new FormData();
-        formData.append('fileQuyTrinh', fileInput.files[0]);
-        formData.append('tenKhoa', targetUpload.tenKhoa);
+        const formData = new FormData(); 
+        formData.append('fileQuyTrinh', fileInput.files[0]); 
+        formData.append('tenKhoa', targetUpload.tenKhoa); 
         formData.append('maQuyTrinh', targetUpload.ma);
         formData.append('tenQuyTrinh', targetUpload.ten);
-        formData.append('tenFileKhoa', fileInput.files[0].name);
+        formData.append('tenFileKhoa', fileInput.files[0].name); 
         formData.append('type', targetUpload.type);
-
-        const res = await fetch('/api/upload/khoa', { method: 'POST', body: formData });
-        const data = await res.json();
-        alert(data.message);
+        
+        const res = await fetch('/api/upload/khoa', { method: 'POST', body: formData }); 
+        const data = await res.json(); 
+        alert(data.message); 
         if (res.ok) window.layDuLieu();
-    } catch (e) {
-        alert("Lỗi khi tải file lên!");
-    }
-    fileInput.value = '';
+    } catch(e) { 
+        alert("Lỗi khi tải file lên!"); 
+    } 
+    fileInput.value = ''; 
     window.showLoading(false);
 }
 
-window.xoaFileKhoa = async function (encodedMa, type = 'QTKT', encodedTen = '') {
-    if (!confirm("Xác nhận GỠ file đính kèm này để nộp lại file khác?")) return;
+window.xoaFileKhoa = async function(encodedMa, type='QTKT', encodedTen='') {
+    if(!confirm("Xác nhận GỠ file đính kèm này để nộp lại file khác?")) return;
     let ma = decodeURIComponent(encodedMa || "");
     let ten = decodeURIComponent(encodedTen || "");
-
+    
     window.showLoading(true);
     try {
         try {
             let mapNames = JSON.parse(localStorage.getItem('fileNamesMap') || '{}');
             delete mapNames[ma];
             localStorage.setItem('fileNamesMap', JSON.stringify(mapNames));
-        } catch (e) { }
+        } catch(e){}
 
-        const res = await fetch('/api/dept-data/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenKhoa: currentUser.tenKhoa, maQuyTrinh: ma, tenQuyTrinh: ten, action: 'RESUBMIT', type: type })
+        const res = await fetch('/api/dept-data/status', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ tenKhoa: currentUser.tenKhoa, maQuyTrinh: ma, tenQuyTrinh: ten, action: 'RESUBMIT', type: type }) 
         });
-
-        if (res.ok) {
-            await window.layDuLieu();
+        
+        if (res.ok) { 
+            await window.layDuLieu(); 
         } else {
             alert("Có lỗi xảy ra khi gỡ file!");
         }
-    } catch (e) {
+    } catch(e) { 
         console.error(e);
-        alert("Lỗi kết nối khi thao tác!");
-    }
+        alert("Lỗi kết nối khi thao tác!"); 
+    } 
     window.showLoading(false);
 }
 
-window.chuanBiUpSinglePdf = function (encodedMa, tenKhoa, encodedTenQuyTrinh, type = 'QTKT') {
+window.chuanBiUpSinglePdf = function(encodedMa, tenKhoa, encodedTenQuyTrinh, type='QTKT') {
     let ma = decodeURIComponent(encodedMa || "");
     let tenQuyTrinh = decodeURIComponent(encodedTenQuyTrinh || "");
-    window.dongModal('detailModal');
+    window.dongModal('detailModal'); 
     window.dongModal('detailDVModal');
     window.dongModal('icdModal');
     targetUpload = { ma: ma, ten: tenQuyTrinh, tenKhoa: tenKhoa, type: type };
-    document.getElementById('lblTenQuyTrinhUpload').innerText = tenQuyTrinh;
+    document.getElementById('lblTenQuyTrinhUpload').innerText = tenQuyTrinh; 
     window.moModal('uploadSinglePdfModal');
 }
 
-window.xuLyUploadSinglePdf = async function () {
-    const fPDF = document.getElementById('fPdfChinhThuc').files[0];
-    if (!fPDF) return alert("Vui lòng chọn file PDF!");
-
+window.xuLyUploadSinglePdf = async function() {
+    const fPDF = document.getElementById('fPdfChinhThuc').files[0]; 
+    if (!fPDF) return alert("Vui lòng chọn file PDF!"); 
+    
     window.showLoading(true);
     try {
-        const formData = new FormData();
-        formData.append('tenKhoa', targetUpload.tenKhoa);
-        formData.append('maQuyTrinh', targetUpload.ma);
-        formData.append('tenQuyTrinh', targetUpload.ten);
+        const formData = new FormData(); 
+        formData.append('tenKhoa', targetUpload.tenKhoa); 
+        formData.append('maQuyTrinh', targetUpload.ma); 
+        formData.append('tenQuyTrinh', targetUpload.ten); 
         formData.append('fPdf', fPDF);
         formData.append('type', targetUpload.type);
-
-        const res = await fetch('/api/upload/final-pdf', { method: 'POST', body: formData });
-        const data = await res.json();
-        alert(data.message);
-
-        if (res.ok) {
-            window.dongModal('uploadSinglePdfModal');
-            document.getElementById('fPdfChinhThuc').value = '';
-            window.layDuLieu();
+        
+        const res = await fetch('/api/upload/final-pdf', { method: 'POST', body: formData }); 
+        const data = await res.json(); 
+        alert(data.message); 
+        
+        if (res.ok) { 
+            window.dongModal('uploadSinglePdfModal'); 
+            document.getElementById('fPdfChinhThuc').value = ''; 
+            window.layDuLieu(); 
         }
-    } catch (e) {
-        alert("Lỗi khi tải file lên!");
-    }
+    } catch(e) { 
+        alert("Lỗi khi tải file lên!"); 
+    } 
     window.showLoading(false);
 }
 
-window.thayDoiTrangThai = async function (tenKhoa, encodedMa, action, type = 'QTKT', encodedTen = '') {
+window.thayDoiTrangThai = async function(tenKhoa, encodedMa, action, type='QTKT', encodedTen='') {
     let ma = decodeURIComponent(encodedMa || "");
     let ten = decodeURIComponent(encodedTen || "");
     let msg = "Xác nhận thao tác này?";
     if (action === 'REJECT_KHOA') msg = "Xác nhận HỦY bài nộp này và trả về cho Khoa sửa lại?";
     if (action === 'REVERT_FINAL') msg = "Xác nhận HỦY PHÊ DUYỆT? File PDF chính thức sẽ bị gỡ bỏ khỏi hệ thống!";
     if (action === 'RESUBMIT') msg = "Xác nhận GỠ file hiện tại để nộp lại file khác?";
-
-    if (!confirm(msg)) return;
+    
+    if (!confirm(msg)) return; 
     window.showLoading(true);
     try {
-        const res = await fetch('/api/dept-data/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenKhoa: tenKhoa, maQuyTrinh: ma, tenQuyTrinh: ten, action: action, type: type })
+        const res = await fetch('/api/dept-data/status', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ tenKhoa: tenKhoa, maQuyTrinh: ma, tenQuyTrinh: ten, action: action, type: type }) 
         });
-        if (res.ok) await window.layDuLieu();
-        else alert("Có lỗi xảy ra!");
-    } catch (e) {
-        alert("Lỗi mạng!");
-    }
+        if (res.ok) await window.layDuLieu(); 
+        else alert("Có lỗi xảy ra!"); 
+    } catch(e) { 
+        alert("Lỗi mạng!"); 
+    } 
     window.showLoading(false);
 }
 
-window.bocQuyTrinh = async function (encodedMa, encodedTen) {
-    if (!currentUser || currentUser.role !== 'khoa') return;
+window.bocQuyTrinh = async function(encodedMa, encodedTen) {
+    if(!currentUser || currentUser.role !== 'khoa') return;
     let ma = decodeURIComponent(encodedMa || "");
     let ten = decodeURIComponent(encodedTen || "");
     let qtInfo = null;
-
+    
     if (ma) {
-        if (Array.isArray(database.PL1)) { qtInfo = database.PL1.find(function (x) { return x && (window.isCodeMatch(x.ma, ma) || window.isCodeMatch(x.maLienKet, ma)); }); }
-        if (!qtInfo && Array.isArray(database.PL2)) { qtInfo = database.PL2.find(function (x) { return x && (window.isCodeMatch(x.ma, ma) || window.isCodeMatch(x.maLienKet, ma)); }); }
+        if(Array.isArray(database.PL1)) { qtInfo = database.PL1.find(function(x) { return x && (window.isCodeMatch(x.ma, ma) || window.isCodeMatch(x.maLienKet, ma)); }); }
+        if(!qtInfo && Array.isArray(database.PL2)) { qtInfo = database.PL2.find(function(x) { return x && (window.isCodeMatch(x.ma, ma) || window.isCodeMatch(x.maLienKet, ma)); }); }
     }
-
+    
     if (!qtInfo && ten) {
         let normTen = window.robustNormalize(ten);
-        if (Array.isArray(database.PL2)) { qtInfo = database.PL2.find(function (x) { return x && window.robustNormalize(x.ten) === normTen; }); }
-        if (!qtInfo && Array.isArray(database.PL1)) { qtInfo = database.PL1.find(function (x) { return x && window.robustNormalize(x.ten) === normTen; }); }
+        if(Array.isArray(database.PL2)) { qtInfo = database.PL2.find(function(x) { return x && window.robustNormalize(x.ten) === normTen; }); }
+        if(!qtInfo && Array.isArray(database.PL1)) { qtInfo = database.PL1.find(function(x) { return x && window.robustNormalize(x.ten) === normTen; }); }
     }
 
-    if (!qtInfo) return alert("Không tìm thấy thông tin kỹ thuật!");
-
+    if(!qtInfo) return alert("Không tìm thấy thông tin kỹ thuật!");
+    
     window.showLoading(true);
-    try {
-        const res = await fetch('/api/dept-data/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenKhoa: currentUser.tenKhoa, quyTrinh: qtInfo, type: 'QTKT' })
-        });
-
+    try { 
+        const res = await fetch('/api/dept-data/add', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ tenKhoa: currentUser.tenKhoa, quyTrinh: qtInfo, type: 'QTKT' }) 
+        }); 
+        
         if (res.ok) {
-            let myDept = database.depts.find(function (d) { return d && d.tenKhoa === currentUser.tenKhoa; });
+            let myDept = database.depts.find(function(d) { return d && d.tenKhoa === currentUser.tenKhoa; });
             if (myDept) {
                 let newQt = JSON.parse(JSON.stringify(qtInfo)); newQt.trangThai = "CHUA_NOP";
                 if (!Array.isArray(myDept.danhMucQTKT)) myDept.danhMucQTKT = [];
@@ -205,27 +205,27 @@ window.bocQuyTrinh = async function (encodedMa, encodedTen) {
             const data = await res.json();
             alert("Lỗi: " + (data.message || "Không thể thêm"));
         }
-    } catch (e) { alert("Lỗi kết nối!"); }
+    } catch(e) { alert("Lỗi kết nối!"); }
     window.showLoading(false);
 }
 
-window.xoaQuyTrinh = async function (encodedMa, tenKhoa, encodedTen) {
-    if (!confirm("Xác nhận xóa kỹ thuật này khỏi danh sách khoa?")) return;
+window.xoaQuyTrinh = async function(encodedMa, tenKhoa, encodedTen) {
+    if(!confirm("Xác nhận xóa kỹ thuật này khỏi danh sách khoa?")) return;
     let ma = decodeURIComponent(encodedMa || "");
     let ten = decodeURIComponent(encodedTen || "");
-
+    
     window.showLoading(true);
-    try {
-        const res = await fetch('/api/dept-data/remove', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenKhoa: tenKhoa, maQuyTrinh: ma, tenQuyTrinh: ten, type: 'QTKT' })
-        });
-
-        if (res.ok) {
-            let targetDept = database.depts.find(function (d) { return d && d.tenKhoa === tenKhoa; });
+    try { 
+        const res = await fetch('/api/dept-data/remove', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ tenKhoa: tenKhoa, maQuyTrinh: ma, tenQuyTrinh: ten, type: 'QTKT' }) 
+        }); 
+        
+        if(res.ok) {
+            let targetDept = database.depts.find(function(d) { return d && d.tenKhoa === tenKhoa; });
             if (targetDept && Array.isArray(targetDept.danhMucQTKT)) {
-                targetDept.danhMucQTKT = targetDept.danhMucQTKT.filter(function (qt) {
+                targetDept.danhMucQTKT = targetDept.danhMucQTKT.filter(function(qt) { 
                     let targetMa = ma ? String(ma).trim().toLowerCase() : "";
                     let targetTen = ten ? String(ten).trim().toLowerCase() : "";
 
@@ -242,71 +242,71 @@ window.xoaQuyTrinh = async function (encodedMa, tenKhoa, encodedTen) {
                     return true;
                 });
             }
-            window.apDungLoc();
+            window.apDungLoc(); 
         } else {
             const data = await res.json();
             alert("Lỗi: " + (data.message || "Không thể xóa"));
         }
-    } catch (e) { alert("Lỗi kết nối mạng!"); }
+    } catch(e) { alert("Lỗi kết nối mạng!"); }
     window.showLoading(false);
 }
 
-window.bocPhacDo = async function (encodedMa, encodedTen) {
-    if (!currentUser || currentUser.role !== 'khoa') return;
+window.bocPhacDo = async function(encodedMa, encodedTen) {
+    if(!currentUser || currentUser.role !== 'khoa') return;
     let ma = decodeURIComponent(encodedMa || "");
     let ten = decodeURIComponent(encodedTen || "");
     let pdInfo = null;
-
+    
     if (ma && Array.isArray(database.ICD10)) {
-        pdInfo = database.ICD10.find(function (x) { return x && (x.maBenh === ma || x.maBenhKhongDau === ma); });
+        pdInfo = database.ICD10.find(function(x) { return x && (x.maBenh === ma || x.maBenhKhongDau === ma); });
     }
     if (!pdInfo && ten && Array.isArray(database.ICD10)) {
-        pdInfo = database.ICD10.find(function (x) { return x && (window.robustNormalize(x.tenBenh) === window.robustNormalize(ten) || window.robustNormalize(x.diseaseName) === window.robustNormalize(ten)); });
+        pdInfo = database.ICD10.find(function(x) { return x && (window.robustNormalize(x.tenBenh) === window.robustNormalize(ten) || window.robustNormalize(x.diseaseName) === window.robustNormalize(ten)); });
     }
 
-    if (!pdInfo) return alert("Không tìm thấy thông tin Mã bệnh!");
-
+    if(!pdInfo) return alert("Không tìm thấy thông tin Mã bệnh!");
+    
     window.showLoading(true);
-    try {
-        const res = await fetch('/api/dept-data/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenKhoa: currentUser.tenKhoa, quyTrinh: pdInfo, type: 'PHAC_DO' })
-        });
-
+    try { 
+        const res = await fetch('/api/dept-data/add', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ tenKhoa: currentUser.tenKhoa, quyTrinh: pdInfo, type: 'PHAC_DO' }) 
+        }); 
+        
         if (res.ok) {
-            let myDept = database.depts.find(function (d) { return d && d.tenKhoa === currentUser.tenKhoa; });
+            let myDept = database.depts.find(function(d) { return d && d.tenKhoa === currentUser.tenKhoa; });
             if (myDept) {
                 let newPd = JSON.parse(JSON.stringify(pdInfo)); newPd.trangThai = "CHUA_NOP";
                 if (!Array.isArray(myDept.danhMucPhacDo)) myDept.danhMucPhacDo = [];
                 myDept.danhMucPhacDo.push(newPd);
             }
-            window.apDungLoc();
+            window.apDungLoc(); 
         } else {
             const data = await res.json();
             alert("Lỗi: " + (data.message || "Không thể thêm"));
         }
-    } catch (e) { alert("Lỗi kết nối!"); }
+    } catch(e) { alert("Lỗi kết nối!"); }
     window.showLoading(false);
 }
 
-window.xoaPhacDo = async function (encodedMa, tenKhoa, encodedTen) {
-    if (!confirm("Xác nhận xóa Phác đồ này khỏi danh sách khoa?")) return;
+window.xoaPhacDo = async function(encodedMa, tenKhoa, encodedTen) {
+    if(!confirm("Xác nhận xóa Phác đồ này khỏi danh sách khoa?")) return;
     let ma = decodeURIComponent(encodedMa || "");
     let ten = decodeURIComponent(encodedTen || "");
-
+    
     window.showLoading(true);
-    try {
-        const res = await fetch('/api/dept-data/remove', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tenKhoa: tenKhoa, maQuyTrinh: ma, tenQuyTrinh: ten, type: 'PHAC_DO' })
-        });
-
-        if (res.ok) {
-            let targetDept = database.depts.find(function (d) { return d && d.tenKhoa === tenKhoa; });
+    try { 
+        const res = await fetch('/api/dept-data/remove', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ tenKhoa: tenKhoa, maQuyTrinh: ma, tenQuyTrinh: ten, type: 'PHAC_DO' }) 
+        }); 
+        
+        if(res.ok) {
+            let targetDept = database.depts.find(function(d) { return d && d.tenKhoa === tenKhoa; });
             if (targetDept && Array.isArray(targetDept.danhMucPhacDo)) {
-                targetDept.danhMucPhacDo = targetDept.danhMucPhacDo.filter(function (pd) {
+                targetDept.danhMucPhacDo = targetDept.danhMucPhacDo.filter(function(pd) { 
                     let targetMa = ma ? String(ma).trim().toLowerCase() : "";
                     let targetTen = ten ? String(ten).trim().toLowerCase() : "";
 
@@ -324,24 +324,24 @@ window.xoaPhacDo = async function (encodedMa, tenKhoa, encodedTen) {
                     return true;
                 });
             }
-            window.apDungLoc();
+            window.apDungLoc(); 
         } else {
             const data = await res.json();
             alert("Lỗi: " + (data.message || "Không thể xóa"));
         }
-    } catch (e) { alert("Lỗi kết nối mạng!"); }
+    } catch(e) { alert("Lỗi kết nối mạng!"); }
     window.showLoading(false);
 }
 
-window.saveDTNH = async function () {
+window.saveDTNH = async function() {
     let selectNamDT = document.getElementById('filterNamDT'); const selectedYear = selectNamDT ? selectNamDT.value : "";
     if (!selectedYear) return alert("Vui lòng chọn Năm đào tạo!");
-
+    
     let savedData = []; let rows = document.getElementById('dataBody').rows; let currentGroupId = 0;
-    let cNoiDung = "", cThoiGian = "", cCNS = "", cNHS = "", cKTV = "", cDD = "", cBS = "", cDonVi = "", cKinhPhi = "";
-
+    let cNoiDung="", cThoiGian="", cCNS="", cNHS="", cKTV="", cDD="", cBS="", cDonVi="", cKinhPhi="";
+    
     for (let i = 0; i < rows.length; i++) {
-        let cells = rows[i].cells; if (!cells || cells.length === 0) continue; let kyThuat = "";
+        let cells = rows[i].cells; if(!cells || cells.length === 0) continue; let kyThuat = "";
         if (cells.length > 2) {
             currentGroupId++;
             cNoiDung = cells[1].querySelector('.editable-cell') ? cells[1].querySelector('.editable-cell').innerText.trim() : "";
@@ -362,16 +362,16 @@ window.saveDTNH = async function () {
     let payloadByKhoa = {}; payloadByKhoa[currentTab] = savedData;
     window.showLoading(true);
     try {
-        const response = await fetch('/api/upload-dtnh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payload: payloadByKhoa, year: selectedYear }) });
-        const result = await response.json(); alert("✅ Đã lưu chỉnh sửa thành công!"); await window.layDuLieu();
+        const response = await fetch('/api/upload-dtnh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payload: payloadByKhoa, year: selectedYear }) }); 
+        const result = await response.json(); alert("✅ Đã lưu chỉnh sửa thành công!"); await window.layDuLieu(); 
     } catch (error) { alert("Lỗi lưu dữ liệu."); console.error(error); } finally { window.showLoading(false); }
 }
 
-window.importFromExcel = async function () {
-    const fileInput = document.getElementById('fileExcel');
-    const file = fileInput.files[0];
-    if (!file) return;
-
+window.importFromExcel = async function() { 
+    const fileInput = document.getElementById('fileExcel'); 
+    const file = fileInput.files[0]; 
+    if (!file) return; 
+    
     if (file.name.toLowerCase().endsWith('.csv') && currentTab === 'ICD10') {
         let isOK = confirm("Lưu ý: File CSV có thể bị lỗi font Tiếng Việt nếu không lưu chuẩn UTF-8. Nên dùng file Excel (.xlsx) để dữ liệu hiển thị tốt nhất. Bạn vẫn muốn tiếp tục?");
         if (!isOK) { fileInput.value = ''; return; }
@@ -380,40 +380,40 @@ window.importFromExcel = async function () {
     if (currentTabType === 'DTNH') {
         const selectedYear = document.getElementById('filterNamDT').value;
         if (!selectedYear) {
-            alert("⚠️ VUI LÒNG CHỌN [NĂM ĐÀO TẠ] Ở THANH TÌM KIẾM PHÍA TRÊN TRƯỚC KHI TẢI FILE LÊN!");
+            alert("⚠️ VUI LÒNG CHỌN [NĂM ĐÀO TẠO] Ở THANH TÌM KIẾM PHÍA TRÊN TRƯỚC KHI TẢI FILE LÊN!");
             fileInput.value = ''; return;
         }
     }
 
-    window.showLoading(true);
-
+    window.showLoading(true); 
+    
     setTimeout(() => {
-        const reader = new FileReader();
-        reader.onload = async function (e) {
-            try {
-                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const reader = new FileReader(); 
+        reader.onload = async function(e) { 
+            try { 
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' }); 
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
-
-                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
-
+                
+                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" }); 
+                
                 if (currentTabType === 'DTNH') {
                     const selectedYear = document.getElementById('filterNamDT').value;
                     let headerRowIndex = -1;
-
+                    
                     for (let i = 0; i < Math.min(1000, rawData.length); i++) {
-                        let rowData = rawData[i];
+                        let rowData = rawData[i]; 
                         if (!rowData || rowData.length === 0) continue;
                         let rowStr = window.robustNormalize(rowData.join(" "));
                         if (rowStr.includes("noi dung dao tao") && (rowStr.includes("ki thuat") || rowStr.includes("ky thuat"))) {
-                            headerRowIndex = i;
+                            headerRowIndex = i; 
                             break;
                         }
                     }
 
-                    if (headerRowIndex === -1) {
-                        alert("Không tìm thấy dòng Tiêu đề chuẩn. Hãy đảm bảo file Excel theo đúng Mẫu đăng ký!");
-                        window.showLoading(false);
-                        return;
+                    if (headerRowIndex === -1) { 
+                        alert("Không tìm thấy dòng Tiêu đề chuẩn. Hãy đảm bảo file Excel theo đúng Mẫu đăng ký!"); 
+                        window.showLoading(false); 
+                        return; 
                     }
 
                     let colKhoa = -1, colNoiDung = -1, colKyThuat = -1, colThoiGian = -1, colDonVi = -1, colKinhPhi = -1;
@@ -422,7 +422,7 @@ window.importFromExcel = async function () {
                     let headRow1 = rawData[headerRowIndex].map(window.robustNormalizeHeader);
                     let headRow2 = (headerRowIndex + 1 < rawData.length) ? rawData[headerRowIndex + 1].map(window.robustNormalizeHeader) : [];
 
-                    headRow1.forEach(function (k, idx) {
+                    headRow1.forEach(function(k, idx) {
                         if (!k) return;
                         if (k === "khoa") colKhoa = idx;
                         if (k.includes("noi dung dao tao")) colNoiDung = idx;
@@ -432,7 +432,7 @@ window.importFromExcel = async function () {
                         if (k.includes("kinh phi")) colKinhPhi = idx;
                     });
 
-                    headRow2.forEach(function (k, idx) {
+                    headRow2.forEach(function(k, idx) {
                         if (!k) return;
                         if (k.includes("sinh hoc") || k.includes("cu nhan")) colCNSH = idx;
                         if (k.includes("ho sinh") || k.includes("nhs")) colNHS = idx;
@@ -442,30 +442,30 @@ window.importFromExcel = async function () {
                     });
 
                     let parsedDataByKhoa = {};
-                    let currentKhoaInFile = "";
-
+                    let currentKhoaInFile = ""; 
+                    
                     let currentNoiDung = "", currentThoiGian = "", currentDonVi = "", currentKinhPhi = "";
                     let currentCNSH = "", currentNHS = "", currentKTV = "", currentDD = "", currentBS = "";
                     let currentGroupId = 0;
 
                     for (let i = headerRowIndex + 2; i < rawData.length; i++) {
-                        let rowData = rawData[i];
+                        let rowData = rawData[i]; 
                         if (!rowData || rowData.length === 0) continue;
-
+                        
                         let tenKhoaRaw = rowData[colKhoa];
-                        if (tenKhoaRaw && String(tenKhoaRaw).trim() !== "") {
-                            currentKhoaInFile = window.robustNormalize(String(tenKhoaRaw));
+                        if (tenKhoaRaw && String(tenKhoaRaw).trim() !== "") { 
+                            currentKhoaInFile = window.robustNormalize(String(tenKhoaRaw)); 
                         }
                         if (!currentKhoaInFile) continue;
 
                         let matchedKhoa = window.timKhoaChinhXac(currentKhoaInFile);
-                        if (!matchedKhoa) continue;
-
+                        if (!matchedKhoa) continue; 
+                        
                         if (currentUser.role !== 'admin' && matchedKhoa !== currentTab) continue;
 
                         let noiDung = rowData[colNoiDung];
                         let kyThuat = rowData[colKyThuat];
-
+                        
                         if (noiDung && String(noiDung).trim() !== "") {
                             currentGroupId++;
                             currentNoiDung = noiDung;
@@ -478,13 +478,13 @@ window.importFromExcel = async function () {
                             currentDD = rowData[colDD] || "";
                             currentBS = rowData[colBS] || "";
                         } else if (!kyThuat || String(kyThuat).trim() === "") {
-                            continue;
+                            continue; 
                         }
 
                         if (!parsedDataByKhoa[matchedKhoa]) {
                             parsedDataByKhoa[matchedKhoa] = [];
                         }
-
+                        
                         parsedDataByKhoa[matchedKhoa].push({
                             groupId: currentGroupId,
                             nam: selectedYear,
@@ -501,51 +501,52 @@ window.importFromExcel = async function () {
                         });
                     }
 
-                    const response = await fetch('/api/upload-dtnh', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ payload: parsedDataByKhoa, year: selectedYear })
-                    });
-                    const result = await response.json();
-                    alert(result.message);
-                    await window.layDuLieu();
-                }
+                    const response = await fetch('/api/upload-dtnh', { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ payload: parsedDataByKhoa, year: selectedYear }) 
+                    }); 
+                    const result = await response.json(); 
+                    alert(result.message); 
+                    await window.layDuLieu(); 
+                } 
                 else {
-                    let headerRowIndex = -1;
+                    let headerRowIndex = -1; 
                     let headers = [];
                     for (let i = 0; i < Math.min(20, rawData.length); i++) {
                         let rowStr = window.robustNormalize(rawData[i].join(" "));
-
-                        if (rowStr.includes("ma dich vu") || rowStr.includes("ma ky thuat") || rowStr.includes("ma tuong duong") ||
-                            rowStr.includes("ten ky thuat") || rowStr.includes("ma benh") || rowStr.includes("disease name") ||
-                            rowStr.includes("ten benh") || rowStr.includes("ten chan doan") || rowStr.includes("ma icd") ||
-                            (rowStr.includes("ma") && rowStr.includes("ten"))) {
-                            headerRowIndex = i;
-                            headers = rawData[i].map(window.robustNormalizeHeader);
+                        
+                        if (rowStr.includes("ma dich vu") || rowStr.includes("ma ky thuat") || rowStr.includes("ma tuong duong") || 
+                            rowStr.includes("ten ky thuat") || rowStr.includes("ma benh") || rowStr.includes("disease name") || 
+                            rowStr.includes("ten benh") || rowStr.includes("ten chan doan") || rowStr.includes("ma icd") || 
+                            (rowStr.includes("ma") && rowStr.includes("ten"))) 
+                        {
+                            headerRowIndex = i; 
+                            headers = rawData[i].map(window.robustNormalizeHeader); 
                             break;
                         }
                     }
 
-                    if (headerRowIndex === -1) {
-                        alert("Không tìm thấy dòng Tiêu đề chuẩn. Hãy đảm bảo file Excel/CSV đúng định dạng có cột Mã và Tên!");
-                        window.showLoading(false);
-                        return;
+                    if (headerRowIndex === -1) { 
+                        alert("Không tìm thấy dòng Tiêu đề chuẩn. Hãy đảm bảo file Excel/CSV đúng định dạng có cột Mã và Tên!"); 
+                        window.showLoading(false); 
+                        return; 
                     }
 
                     let parsedData = [];
                     for (let i = headerRowIndex + 1; i < rawData.length; i++) {
-                        let rowData = rawData[i];
-                        if (!rowData || rowData.length === 0) continue;
-                        let item = {};
+                        let rowData = rawData[i]; 
+                        if (!rowData || rowData.length === 0) continue; 
+                        let item = {}; 
                         let hasData = false;
 
-                        headers.forEach(function (k, colIndex) {
-                            if (!k) return;
-                            let v = rowData[colIndex];
+                        headers.forEach(function(k, colIndex) { 
+                            if (!k) return; 
+                            let v = rowData[colIndex]; 
                             if (v !== undefined && v !== null && v !== "") hasData = true;
-
+                            
                             let kn = window.robustNormalizeHeader(k);
-                            let formatCode = function (val) {
+                            let formatCode = function(val) {
                                 if (val === undefined || val === null || val === "") return val;
                                 return String(val).replace(/,/g, '.').trim();
                             };
@@ -564,7 +565,7 @@ window.importFromExcel = async function () {
                                 if (kn === "gia vien phi" || kn.includes("gia vien phi") || kn.includes("gia_vienphi")) item.giaVienPhi = v;
                                 if (kn === "gia yeu cau" || kn.includes("gia yeu cau") || kn.includes("gia_yeucau")) item.giaYeuCau = v;
                                 if (kn === "gia nuoc ngoai" || kn.includes("gia nuoc ngoai") || kn.includes("gia_nuocngoai")) item.giaNuocNgoai = v;
-                            }
+                            } 
                             else if (currentTab === 'ICD10') {
                                 if (kn === "stt chuong" || kn.includes("stt chuong")) item.sttChuong = v;
                                 else if (kn === "ma chuong" || kn.includes("ma chuong")) item.maChuong = v;
@@ -589,42 +590,41 @@ window.importFromExcel = async function () {
                                 else if (kn === "ghi chu" || kn.includes("ghi chu")) item.ghiChu = v;
                             }
                             else {
-                                if (kn.includes("ma ky thuat") || kn.includes("ma ki thuat") || kn === "ma") item.ma = formatCode(v);
-                                if (kn.includes("stt cua chuong") || kn === "machuong") item.maChuong = v;
-                                if (kn.includes("ten chuong") || kn === "chuong") item.chuong = v;
-                                if (kn.includes("ma lien ket") || kn === "malienket") item.maLienKet = formatCode(v);
-                                if (kn.includes("ten ky thuat") || kn.includes("ten ki thuat") || kn === "ten") item.ten = v;
-                                if (kn.includes("phan loai") || kn === "phanloai") item.phanLoai = v;
-                                if (kn.includes("quyet dinh") || kn === "quyetdinh") item.quyetDinh = v;
+                                if (kn.includes("ma ky thuat") || kn.includes("ma ki thuat") || kn === "ma") item.ma = formatCode(v); 
+                                if (kn.includes("stt cua chuong") || kn === "machuong") item.maChuong = v; 
+                                if (kn.includes("ten chuong") || kn === "chuong") item.chuong = v; 
+                                if (kn.includes("ma lien ket") || kn === "malienket") item.maLienKet = formatCode(v); 
+                                if (kn.includes("ten ky thuat") || kn.includes("ten ki thuat") || kn === "ten") item.ten = v; 
+                                if (kn.includes("phan loai") || kn === "phanloai") item.phanLoai = v; 
+                                if (kn.includes("quyet dinh") || kn === "quyetdinh") item.quyetDinh = v; 
                             }
-                        });
+                        }); 
                         if (hasData) parsedData.push(item);
-                    }
-
+                    } 
+                    
                     database[currentTab] = parsedData;
-                    if (currentTab === 'GiaDV') window.enrichGiaDV();
-
-                    const formData = new FormData();
-                    formData.append('fileExcel', file);
-                    formData.append('tabName', currentTab);
-                    formData.append('tabData', JSON.stringify(database[currentTab]));
-                    const response = await fetch('/api/upload-and-save', { method: 'POST', body: formData });
-                    const result = await response.json();
-                    alert(result.message);
-                    window.apDungLoc();
+                    if (currentTab === 'GiaDV') window.enrichGiaDV(); 
+                    
+                    const formData = new FormData(); 
+                    formData.append('fileExcel', file); 
+                    formData.append('tabName', currentTab); 
+                    formData.append('tabData', JSON.stringify(database[currentTab])); 
+                    const response = await fetch('/api/upload-and-save', { method: 'POST', body: formData }); 
+                    const result = await response.json(); 
+                    alert(result.message); 
+                    window.apDungLoc(); 
                 }
-            } catch (error) {
-                alert("Lỗi xử lý file! Vui lòng kiểm tra định dạng.");
-            } finally {
-                fileInput.value = ''; window.showLoading(false);
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    }, 50);
+            } catch (error) { 
+                alert("Lỗi xử lý file! Vui lòng kiểm tra định dạng."); 
+            } finally { 
+                fileInput.value = ''; window.showLoading(false); 
+            } 
+        }; 
+        reader.readAsArrayBuffer(file); 
+    }, 50); 
 }
 
-// 🟢 XUẤT EXCEL (ĐÃ SỬA: TUYỆT ĐỐI KHÔNG DÙNG TÊN ĐỂ KHỚP)
-window.exportToExcel = function () {
+window.exportToExcel = function() { 
     if (!currentFilteredData || currentFilteredData.length === 0) { alert("Không có dữ liệu để xuất!"); return; }
     window.showLoading(true);
 
@@ -647,14 +647,14 @@ window.exportToExcel = function () {
                 excelData.push([index + 1, item.ma || item.maLienKet || "", item.chuong || "", item.ten || "", item.tt23_ma || "", item.tt23_ten || "Chưa có trong TT23"]);
             });
             let ws = XLSX.utils.aoa_to_sheet(excelData);
-            ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }];
+            ws['!merges'] = [{ s: {r:0, c:0}, e: {r:0, c:5} }, { s: {r:1, c:0}, e: {r:1, c:5} }];
             XLSX.utils.book_append_sheet(wb, ws, "ChuaApGia");
             XLSX.writeFile(wb, `QTKT_ChuaApGia_${new Date().getTime()}.xlsx`);
             window.showLoading(false); return;
         }
 
         currentFilteredData.forEach((item, index) => {
-            if (!item) return;
+            if(!item) return;
             if (currentTab === 'GiaDV') {
                 let uniqueId = String(item.maTuongDuong || item.tenKyThuat || index);
                 if (selectedGiaDV.length > 0 && !selectedGiaDV.includes(uniqueId)) return;
@@ -670,7 +670,6 @@ window.exportToExcel = function () {
                     let matchedGiaDVSet = new Set(); let matchedMaDVBVSet = new Set();
                     let arrSearch = window.normalizeCodeFast(maHienThi).split(';').filter(Boolean);
 
-                    // 🔴 CHỈ KHỚP THEO MÃ, LOẠI BỎ KHỚP THEO TÊN ĐỂ GIỐNG WEB
                     arrSearch.forEach(m => {
                         if (window.giaDvMapByCode.has(m)) window.giaDvMapByCode.get(m).forEach(g => matchedGiaDVSet.add(g));
                         if (window.maDvbvMapByCode.has(m)) window.maDvbvMapByCode.get(m).forEach(b => matchedMaDVBVSet.add(b));
@@ -679,9 +678,9 @@ window.exportToExcel = function () {
                     let matchedGiaDV = Array.from(matchedGiaDVSet);
                     let matchedMaDVBV = Array.from(matchedMaDVBVSet);
 
-                    val_matd = matchedGiaDV.map(g => g.maTuongDuong || '').join('\n');
+                    val_matd = matchedGiaDV.map(g => g.maTuongDuong||'').join('\n');
                     val_giabhyt = matchedGiaDV.map(g => window.formatTien(g.giaMax)).join('\n');
-                    val_madv = matchedMaDVBV.map(b => b.maDichVu || '').join('\n');
+                    val_madv = matchedMaDVBV.map(b => b.maDichVu||'').join('\n');
                     val_giavp = matchedMaDVBV.map(b => window.formatTien(b.giaVienPhi)).join('\n');
                     val_giayc = matchedMaDVBV.map(b => window.formatTien(b.giaYeuCau)).join('\n');
                     val_giann = matchedMaDVBV.map(b => window.formatTien(b.giaNuocNgoai)).join('\n');
@@ -708,10 +707,177 @@ window.exportToExcel = function () {
             }
         });
 
-        let ws = XLSX.utils.json_to_sheet(cleanData);
+        let ws = XLSX.utils.json_to_sheet(cleanData); 
         ws['!cols'] = Object.keys(cleanData[0] || {}).map(() => ({ wch: 25 }));
-        XLSX.utils.book_append_sheet(wb, ws, "Danh_Muc_Trích_Xuất");
-        XLSX.writeFile(wb, `Danh_Muc_${currentTab}_${new Date().getTime()}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "Danh_Muc_Trích_Xuất"); 
+        XLSX.writeFile(wb, `Danh_Muc_${currentTab}_${new Date().getTime()}.xlsx`); 
         window.showLoading(false);
+    }, 50);
+}
+
+// 🟢 TẠO INPUT ẨN ĐỂ NHẬN FILE CẬP NHẬT PHÂN LOẠI
+window.addEventListener('DOMContentLoaded', function() {
+    if (!document.getElementById('fileCapNhatPhanLoai')) {
+        let fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'fileCapNhatPhanLoai';
+        fileInput.style.display = 'none';
+        fileInput.accept = '.xlsx, .xls, .csv';
+        fileInput.onchange = window.xuLyCapNhatPhanLoai;
+        document.body.appendChild(fileInput);
+    }
+});
+
+// 🟢 KÍCH HOẠT NÚT TẢI FILE
+window.chuanBiCapNhatPhanLoai = function() {
+    if (currentTab !== 'PL1' && currentTab !== 'PL2') {
+        alert("⚠️ Vui lòng chuyển sang Tab Phụ lục 1 hoặc Phụ lục 2 để sử dụng tính năng Cập nhật Phân loại!");
+        return;
+    }
+    document.getElementById('fileCapNhatPhanLoai').click();
+};
+
+// 🟢 XỬ LÝ CẬP NHẬT PHÂN LOẠI (HỖ TRỢ ĐỊNH DẠNG MA TRẬN CSV/EXCEL)
+window.xuLyCapNhatPhanLoai = async function() {
+    const fileInput = document.getElementById('fileCapNhatPhanLoai');
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    window.showLoading(true);
+    setTimeout(() => {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+
+                // 1. Tìm dòng tiêu đề
+                let headerRowIndex = -1;
+                let headers = [];
+                for (let i = 0; i < Math.min(20, rawData.length); i++) {
+                    let rowStr = window.robustNormalize(rawData[i].join(" "));
+                    if (rowStr.includes("ma ky thuat") || rowStr.includes("ten ky thuat") || rowStr.includes("phan loai") || rowStr.includes("p1")) {
+                        headerRowIndex = i;
+                        headers = rawData[i].map(window.robustNormalizeHeader);
+                        break;
+                    }
+                }
+
+                if (headerRowIndex === -1) {
+                    alert("Không tìm thấy dòng Tiêu đề chuẩn. Hãy đảm bảo file có cột Mã kỹ thuật / Tên kỹ thuật!");
+                    window.showLoading(false);
+                    return;
+                }
+
+                // 2. Phân tích các cột
+                let colMa = -1, colTen = -1;
+                let colPhanLoaiMap = {}; // Bản đồ lưu vị trí cột và tên phân loại tương ứng
+                const validClasses = ["pdb", "p1", "p2", "p3", "tdb", "t1", "t2", "t3"];
+
+                headers.forEach((h, idx) => {
+                    if (!h) return;
+                    if (h.includes("ma ky thuat") || h.includes("ma ki thuat") || h === "ma") colMa = idx;
+                    if (h.includes("ten ky thuat") || h.includes("ten ki thuat") || h === "ten") colTen = idx;
+
+                    // Nếu là cột P1, P2... trong dạng ma trận
+                    validClasses.forEach(vc => {
+                        if (h === vc) {
+                            let standardClass = vc.toUpperCase();
+                            if (vc === "pdb") standardClass = "PĐB";
+                            if (vc === "tdb") standardClass = "TĐB";
+                            colPhanLoaiMap[idx] = standardClass;
+                        }
+                    });
+
+                    // Nếu là 1 cột "Phân loại" chung
+                    if (h === "phan loai" || h.includes("phan loai")) {
+                        colPhanLoaiMap[idx] = "SINGLE_COL";
+                    }
+                });
+
+                // 3. Trích xuất danh sách cập nhật từ Excel
+                let updateMap = [];
+                for (let i = headerRowIndex + 1; i < rawData.length; i++) {
+                    let rowData = rawData[i];
+                    if (!rowData || rowData.length === 0) continue;
+
+                    let ma = colMa !== -1 ? String(rowData[colMa] || "").replace(/,/g, '.').trim() : "";
+                    let ten = colTen !== -1 ? String(rowData[colTen] || "").trim() : "";
+                    let phanLoai = "";
+
+                    // Tìm xem ô nào trong ma trận có giá trị
+                    for (let colIdx in colPhanLoaiMap) {
+                        let val = rowData[colIdx];
+                        if (val && String(val).trim() !== "") {
+                            if (colPhanLoaiMap[colIdx] === "SINGLE_COL") {
+                                phanLoai = String(val).trim();
+                            } else {
+                                // Lấy tên phân loại dựa vào cột nó đang đứng
+                                phanLoai = colPhanLoaiMap[colIdx]; 
+                            }
+                            break;
+                        }
+                    }
+
+                    if ((ma || ten) && phanLoai) {
+                        updateMap.push({ ma: window.normalizeCodeFast(ma), ten: window.robustNormalize(ten), phanLoai: phanLoai });
+                    }
+                }
+
+                // 4. Áp dụng vào CSDL trên Web
+                let targetDB = database[currentTab];
+                if (!Array.isArray(targetDB) || (currentTab !== 'PL1' && currentTab !== 'PL2')) {
+                    alert("Chức năng này chỉ áp dụng cho bảng Phụ lục 1 và Phụ lục 2!");
+                    window.showLoading(false);
+                    return;
+                }
+
+                let updateCount = 0;
+                targetDB.forEach(item => {
+                    if (!item) return;
+                    let itemMa = window.normalizeCodeFast(item.ma || item.maLienKet || "");
+                    let itemTen = window.robustNormalize(item.ten || "");
+
+                    let matched = null;
+                    // Ưu tiên 1: Khớp theo Mã
+                    if (itemMa) matched = updateMap.find(u => u.ma && window.isCodeMatch(itemMa, u.ma));
+                    // Ưu tiên 2: Khớp theo Tên (chỉ dùng khi không có Mã)
+                    if (!matched && itemTen) matched = updateMap.find(u => u.ten && u.ten === itemTen);
+
+                    if (matched) {
+                        item.phanLoai = matched.phanLoai;
+                        updateCount++;
+                    }
+                });
+
+                // 5. Gửi dữ liệu đã cập nhật lên Server
+                if (updateCount > 0) {
+                    const formData = new FormData();
+                    formData.append('tabName', currentTab);
+                    formData.append('tabData', JSON.stringify(targetDB));
+                    
+                    // Tạo một file ảo để pass qua hàm upload-and-save của backend
+                    const blob = new Blob(["dummy text"], { type: "text/plain" });
+                    formData.append('fileExcel', blob, "update_phan_loai.txt");
+
+                    const response = await fetch('/api/upload-and-save', { method: 'POST', body: formData });
+                    const result = await response.json();
+                    
+                    alert(`✅ Đã cập nhật Phân loại cho ${updateCount} kỹ thuật thành công!`);
+                    window.apDungLoc();
+                } else {
+                    alert("⚠️ Không có kỹ thuật nào khớp để cập nhật! Vui lòng kiểm tra lại file Excel.");
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert("❌ Lỗi xử lý file! Vui lòng kiểm tra định dạng.");
+            } finally {
+                fileInput.value = '';
+                window.showLoading(false);
+            }
+        };
+        reader.readAsArrayBuffer(file);
     }, 50);
 }
