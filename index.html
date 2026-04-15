@@ -143,6 +143,7 @@
             <button id="btnSaveDTNH" class="btn" style="background:var(--warning); color:black; font-size: 14px; padding: 10px 15px; display:none;" onclick="window.saveDTNH()">💾 Lưu Bảng</button>
             <button class="btn" style="background:var(--success); font-size: 14px; padding: 10px 15px;" onclick="window.exportToExcel()">📥 Xuất Excel</button>
             <button id="btnNhapExcel" class="btn" style="background:#17a2b8; font-size: 14px; padding: 10px 15px;" onclick="document.getElementById('fileExcel').click()">📤 Nhập File Excel</button>
+            <button class="btn" style="background:#17a2b8; color:white; font-weight:bold; margin-left:10px;" onclick="window.chuanBiCapNhatPhanLoai()">🔄 Cập nhật Phân loại</button>
             <input type="file" id="fileExcel" style="display:none" onchange="window.importFromExcel()" accept=".xlsx, .xls, .csv">
         </div>
     </div>
