@@ -694,6 +694,9 @@ window.exportToExcel = function() {
                     if (col === 'col_stt') row[colName] = cleanData.length + 1;
                     else if (col === 'col_ma') row[colName] = maHienThi;
                     else if (col === 'col_ten') row[colName] = item.ten || "";
+                    // 🔴 ĐÃ SỬA: Bắt đúng biến item.phanLoai và item.quyetDinh 
+                    else if (col === 'col_phanloai') row[colName] = item.phanLoai || ""; 
+                    else if (col === 'col_quyetdinh') row[colName] = item.quyetDinh || "";
                     else if (col === 'col_matd') row[colName] = val_matd;
                     else if (col === 'col_madv') row[colName] = val_madv;
                     else if (col === 'col_giabhyt') row[colName] = val_giabhyt;
@@ -715,7 +718,6 @@ window.exportToExcel = function() {
     }, 50);
 }
 
-// TẠO INPUT ẨN ĐỂ NHẬN FILE CẬP NHẬT PHÂN LOẠI
 window.addEventListener('DOMContentLoaded', function() {
     if (!document.getElementById('fileCapNhatPhanLoai')) {
         let fileInput = document.createElement('input');
@@ -811,7 +813,6 @@ window.xuLyCapNhatPhanLoai = async function() {
                         }
                     }
 
-                    // NẾU TẤT CẢ CÁC Ô ĐỀU TRỐNG THÌ MẶC ĐỊNH LÀ "KPL"
                     if (phanLoai === "") {
                         phanLoai = "KPL";
                     }
